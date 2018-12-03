@@ -1,0 +1,22 @@
+#cloud-config
+#MEncoder launch config
+repo_update: true
+repo_upgrade: all
+
+packages:
+- git
+- gradle
+
+runcmd:
+
+#Install MEncoder
+- echo 'deb http://us.archive.ubuntu.com/ubuntu trusty main universe' >> /etc/apt/sources.list
+- apt-get --yes update
+- apt-get --yes mencoder
+
+#clone git-repo and install and run
+- cd /home/ubuntu
+- git clone git@github.com:pixelguy95/encoder-cloud.git
+- cd encoder-cloud
+- gradle encoderPrototypeConsumer
+- java -jar build/libs/encoder-cloud-encoder*

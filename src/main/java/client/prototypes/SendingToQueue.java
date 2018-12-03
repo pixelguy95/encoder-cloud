@@ -1,16 +1,14 @@
 package client.prototypes;
 
-import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.*;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 public class SendingToQueue {
 
-    public static String QUEUE_NAME = "all-encoding-queue";
+    public static String ENCODING_REQUEST_QUEUE = "encoding-request-queue";
+    public static String BASIC_LOG_QUEUE = "basic-log-queue";
 
     public static void main(String args[]) throws IOException, TimeoutException {
 
@@ -21,8 +19,9 @@ public class SendingToQueue {
         Connection connection = connectionFactory.newConnection();
         Channel channel = connection.createChannel();
 
-        declareQueue(channel);
+        declareQueues(channel);
         sendMessage("Hello world!", channel);
+
         shutdown(channel, connection);
     }
 
@@ -32,11 +31,11 @@ public class SendingToQueue {
     }
 
     private static void sendMessage(String s, Channel channel) throws IOException {
-        channel.basicPublish("", QUEUE_NAME, null, s.getBytes());
+        channel.basicPublish("", ENCODING_REQUEST_QUEUE, null, s.getBytes());
     }
 
-    public static void declareQueue(Channel channel) throws IOException {
-        AMQP.Queue.DeclareOk ok = channel.queueDeclare(QUEUE_NAME, true, false, false, null);
+    public static void declareQueues(Channel channel) throws IOException {
+        AMQP.Queue.DeclareOk ok = channel.queueDeclare(ENCODING_REQUEST_QUEUE, true, false, false, null);
+        ok = channel.queueDeclare(BASIC_LOG_QUEUE, true, false, false, null);
     }
-
 }

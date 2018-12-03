@@ -36,6 +36,31 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
 
+task logPrototypeJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'encoder-cloud-prototype-logger',
+                'Implementation-Version': version,
+                'Main-Class': 'client.prototypes.LogQueueConsumer'
+    }
+    baseName = project.name + '-logger'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
+}
+
+task encoderPrototypeConsumer(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'encoder-cloud-prototype-encoder',
+                'Implementation-Version': version,
+                'Main-Class': 'client.prototypes.QueueConsumerPrototype'
+    }
+    baseName = project.name + '-encoder'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
+}
 
 
 
