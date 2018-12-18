@@ -36,6 +36,20 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
 
+
+task managerJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'encoder-cloud-prototype-logger',
+                'Implementation-Version': version,
+                'Main-Class': 'manager.ManagerCore'
+    }
+    baseName = project.name + '-manager'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
+}
+
 task logPrototypeJar(type: Jar) {
     manifest {
         attributes 'Implementation-Title': 'encoder-cloud-prototype-logger',
