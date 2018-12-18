@@ -14,13 +14,14 @@ public class QueueChannelWrapper {
     public static String BASIC_LOG_QUEUE =          "basic-log-queue";
 
     public Channel channel;
+    public Connection connection;
 
     public QueueChannelWrapper() throws IOException, TimeoutException {
         ConnectionFactory connectionFactory = new ConnectionFactory();
         connectionFactory.setHost("queue.ndersson.io");
         connectionFactory.setUsername("admin");
         connectionFactory.setPassword("kebabpizza");
-        Connection connection = connectionFactory.newConnection();
+        connection = connectionFactory.newConnection();
         channel = connection.createChannel();
 
         declareQueues(channel);
@@ -31,7 +32,7 @@ public class QueueChannelWrapper {
         ok = channel.queueDeclare(BASIC_LOG_QUEUE, true, false, false, null);
     }
 
-    public void shutdown(Channel channel, Connection connection) throws IOException, TimeoutException {
+    public void shutdown() throws IOException, TimeoutException {
         channel.close();
         connection.close();
     }
