@@ -1,6 +1,7 @@
 package client;
 
 import aws.CredentialsFetch;
+import client.prototypes.QueueChannelWrapper;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
@@ -20,10 +21,6 @@ import java.util.concurrent.TimeoutException;
 public class ClientCore {
 
     private static final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withCredentials(CredentialsFetch.getCredentialsProvider()).withRegion(Regions.EU_CENTRAL_1).build();
-    private static Channel channel;
-    private static Connection connection;
-    private static String ENCODING_REQUEST_QUEUE = "encoding-request-queue";
-    private static String BASIC_LOG_QUEUE = "basic-log-queue";
 
     public static void main(String[] args) throws IOException, TimeoutException {
 
@@ -33,16 +30,13 @@ public class ClientCore {
             System.exit(0);
         }
 
+        QueueChannelWrapper channelWrapper = new QueueChannelWrapper();
+
         createBucket(args[0]);
 
         upload(args[0],args[2], args[1]);
 
-        openConnectionToMQ();
-
-        declareQueues(channel);
-        sendMessage(args[2], channel);
-
-        shutdown(channel, connection);
+        sendMessage(args[2], channelWrapper.channel);
     }
 
     private static void createBucket(String bucketName) {
@@ -68,26 +62,9 @@ public class ClientCore {
         }
     }
 
-    private static void openConnectionToMQ() throws IOException, TimeoutException {
-
-        ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost("queue.ndersson.io");
-        connectionFactory.setUsername("admin");
-        connectionFactory.setPassword("kebabpizza");
-        connection = connectionFactory.newConnection();
-        channel = connection.createChannel();
-
-    }
-
-    private static void shutdown(Channel channel, Connection connection) throws IOException, TimeoutException {
-        channel.close();
-        connection.close();
-        System.out.println("DONE");
-    }
-
     private static void sendMessage(String key, Channel channel) throws IOException {
         System.out.println("Sending to MQ");
-        channel.basicPublish("", ENCODING_REQUEST_QUEUE, null, buildMQMessage(key).getBytes());
+        channel.basicPublish("", QueueChannelWrapper.ENCODING_REQUEST_QUEUE, null, buildMQMessage(key).getBytes());
     }
 
     private static String buildMQMessage(String key) {
@@ -96,10 +73,5 @@ public class ClientCore {
 
         Gson gson = new Gson();
         return gson.toJson(message);
-    }
-
-    private static void declareQueues(Channel channel) throws IOException {
-        AMQP.Queue.DeclareOk ok = channel.queueDeclare(ENCODING_REQUEST_QUEUE, true, false, false, null);
-        ok = channel.queueDeclare(BASIC_LOG_QUEUE, true, false, false, null);
     }
 }
