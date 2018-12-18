@@ -32,14 +32,16 @@ public class InfrastructureCore {
         tagSpecification.setTags(Arrays.asList(infrastructureTypeTag));
 
 
-
         //Start manager instance
         RunInstancesRequest managerRequest = new RunInstancesRequest()
                 .withImageId("ami-0bdf93799014acdc4")
                 .withKeyName("school") //CJs key
                 .withInstanceType(InstanceType.T2Micro)
                 .withTagSpecifications(tagSpecification)
-                .withUserData(Base64.getEncoder().encodeToString(Files.readAllBytes(Paths.get("launch-configurations/manager-replica-instance.yml"))));
-        ec2Client.runInstances(managerRequest);
+                .withUserData(Base64.getEncoder().encodeToString(Files.readAllBytes(Paths.get("launch-configurations/manager-replica-instance.yml"))))
+                .withMinCount(1)
+                .withMaxCount(1);
+        RunInstancesResult result = ec2Client.runInstances(managerRequest);
+        System.out.println(result.getReservation().getReservationId());
     }
 }
