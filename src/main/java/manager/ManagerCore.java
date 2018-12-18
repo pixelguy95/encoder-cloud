@@ -8,6 +8,7 @@ import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.InstanceType;
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
+import com.amazonaws.services.identitymanagement.AmazonIdentityManagementAsyncClientBuilder;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
@@ -38,15 +39,18 @@ public class ManagerCore {
     }
 
     public static void main(String args[]) throws IOException, TimeoutException {
+
+        QueueChannelWrapper qcw = new QueueChannelWrapper();
+        qcw.channel.basicPublish("", QueueChannelWrapper.BASIC_LOG_QUEUE, null, "MANAGER STARTING".getBytes());
+
+        qcw.shutdown();
+
         if(args.length > 0 && args[0].equals("r")) {
             new ManagerCore(true);
         } else {
             new ManagerCore(false);
         }
 
-        QueueChannelWrapper qcw = new QueueChannelWrapper();
-        qcw.channel.basicPublish("", QueueChannelWrapper.BASIC_LOG_QUEUE, null, "MANAGER STARTING".getBytes());
 
-        qcw.shutdown();
     }
 }
