@@ -26,38 +26,49 @@ public class ClientCore {
     private static String BASIC_LOG_QUEUE = "basic-log-queue";
 
     public static void main(String[] args) throws IOException, TimeoutException {
-        //createBucket("kgencoderbucket");
 
-        upload("kgencoderbucket","unconverted/polarBear", "movies/SampleVideo_1280x720_1mb.mp4");
+        if(args.length < 3) {
+            System.out.println("Not enough inputs");
+            System.out.println("Arguments are: nameOfBucket, pathToFile, UniqueKey");
+            System.exit(0);
+        }
 
+        createBucket(args[0]);
+
+        upload(args[0],args[2], args[1]);
 
         openConnectionToMQ();
 
         declareQueues(channel);
-        sendMessage("unconverted/polarBear", channel);
+        sendMessage(args[2], channel);
 
         shutdown(channel, connection);
     }
 
-    public static void createBucket(String bucketName) {
-        System.out.println("Create bucket");
-        s3.createBucket(bucketName);
-    }
+    private static void createBucket(String bucketName) {
 
-
-    public static void upload(String bucketName, String keyName, String path) {
-        System.out.println("Uploading...");
-
-        try {
-            s3.putObject(bucketName, keyName, new File(path));
-        } catch (AmazonServiceException e) {
-            System.err.println(e.getErrorMessage());
-            System.exit(1);
+        if(!s3.doesBucketExist(bucketName)) {
+            System.out.println("Create bucket");
+            s3.createBucket(bucketName);
         }
-        System.out.println("Done!");
     }
 
-    public static void openConnectionToMQ() throws IOException, TimeoutException {
+
+    private static void upload(String bucketName, String keyName, String path) {
+
+        if(!s3.doesObjectExist(bucketName,keyName)) {
+            System.out.println("Uploading...");
+            try {
+                s3.putObject(bucketName, keyName, new File(path));
+            } catch (AmazonServiceException e) {
+                System.err.println(e.getErrorMessage());
+                System.exit(1);
+            }
+            System.out.println("Done!");
+        }
+    }
+
+    private static void openConnectionToMQ() throws IOException, TimeoutException {
 
         ConnectionFactory connectionFactory = new ConnectionFactory();
         connectionFactory.setHost("queue.ndersson.io");
@@ -71,24 +82,23 @@ public class ClientCore {
     private static void shutdown(Channel channel, Connection connection) throws IOException, TimeoutException {
         channel.close();
         connection.close();
+        System.out.println("DONE");
     }
 
     private static void sendMessage(String key, Channel channel) throws IOException {
-
+        System.out.println("Sending to MQ");
         channel.basicPublish("", ENCODING_REQUEST_QUEUE, null, buildMQMessage(key).getBytes());
     }
 
-    public static String buildMQMessage(String key) {
+    private static String buildMQMessage(String key) {
         Message message = new Message();
-
         message.setKey(key);
 
         Gson gson = new Gson();
-
         return gson.toJson(message);
     }
 
-    public static void declareQueues(Channel channel) throws IOException {
+    private static void declareQueues(Channel channel) throws IOException {
         AMQP.Queue.DeclareOk ok = channel.queueDeclare(ENCODING_REQUEST_QUEUE, true, false, false, null);
         ok = channel.queueDeclare(BASIC_LOG_QUEUE, true, false, false, null);
     }
