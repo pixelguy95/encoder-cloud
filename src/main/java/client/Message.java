@@ -34,4 +34,9 @@ public class Message {
     public void setKey(String key) {
         this.key = key;
     }
+
+    @Override
+    public String toString() {
+        return "format: '" + this.format + "', size: '" + this.size + "', key: '" + this.key + "'";
+    }
 }
