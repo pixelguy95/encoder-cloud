@@ -9,6 +9,8 @@ import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementAsyncClientBuilder;
 import com.amazonaws.services.identitymanagement.model.*;
+import infrastructure.iam.InstanceProfileCreator;
+import infrastructure.instances.manager.ManagerInstance;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,24 +26,11 @@ public class InfrastructureCore {
 
         cp = CredentialsFetch.getCredentialsProvider();
 
-        System.out.println(createManagerRole());
-        //loadManagerPolicy();
-        //createManagerPolicy();
-        //runManagerInstance();
+        System.out.println("Creating manager IAM role");
+        String managerIAMRoleARN = createManagerRole();
+        System.out.println("Starting initial manager instance");
+        runManagerInstance(managerIAMRoleARN);
     }
-
-    public static void loadManagerPolicy() throws IOException {
-        AmazonIdentityManagement aim = AmazonIdentityManagementAsyncClientBuilder.standard()
-                .withRegion(Regions.EU_CENTRAL_1)
-                .withCredentials(cp)
-                .build();
-
-        GetPolicyRequest gpr = new GetPolicyRequest();
-        gpr.setPolicyArn("arn:aws:iam::aws:policy/AmazonEC2FullAccess");
-        GetPolicyResult res = aim.getPolicy(gpr);
-        System.out.println(res.getPolicy().toString());
-    }
-
 
     /**
      * Creates a new IAM role for the manager
@@ -57,50 +46,22 @@ public class InfrastructureCore {
                 .withCredentials(cp)
                 .build();
 
-        try {
-            CreateRoleRequest crr = new CreateRoleRequest();
-            crr.setRoleName("manager-role-v1");
-            crr.setDescription("A test for the manager role");
-            crr.setAssumeRolePolicyDocument(new String(Files.readAllBytes(Paths.get("iam-policy-json/manager-assume-role-document.json"))));
-            aim.createRole(crr);
+        System.out.println("===Trying to create manager instance profile===");
+        InstanceProfile ip = InstanceProfileCreator.create(aim, "manager-role-v1", "manager-iam-instance-profile-v1", "arn:aws:iam::aws:policy/AmazonEC2FullAccess");
 
-            AttachRolePolicyRequest arpr = new AttachRolePolicyRequest();
-            arpr.setRoleName("manager-role-v1");
-            arpr.setPolicyArn("arn:aws:iam::aws:policy/AmazonEC2FullAccess");
-            aim.attachRolePolicy(arpr);
-        } catch (EntityAlreadyExistsException e) {
-            // Thrown if the role has already been created
-        }
-
-        GetRoleRequest grr = new GetRoleRequest();
-        grr.setRoleName("manager-role-v1");
-        return aim.getRole(grr).getRole().getArn();
+        String arn = ip.getArn();
+        System.out.println("ARN: " + arn);
+        return arn;
     }
 
-    public static void runManagerInstance() throws IOException {
+    public static void runManagerInstance(String IAMRole) throws IOException {
 
         AmazonEC2 ec2Client = AmazonEC2ClientBuilder.standard()
                 .withRegion(Regions.EU_CENTRAL_1)
                 .withCredentials(cp)
                 .build();
 
-        Tag infrastructureTypeTag = new Tag();
-        infrastructureTypeTag.setKey("infrastructure-type");
-        infrastructureTypeTag.setValue("manager " + System.currentTimeMillis());
-        TagSpecification tagSpecification = new TagSpecification();
-        tagSpecification.setResourceType(ResourceType.Instance);
-        tagSpecification.setTags(Arrays.asList(infrastructureTypeTag));
-
-        //Start manager instance
-        RunInstancesRequest managerRequest = new RunInstancesRequest()
-                .withImageId("ami-0bdf93799014acdc4")
-                .withKeyName("school") //CJs key
-                .withInstanceType(InstanceType.T2Micro)
-                .withTagSpecifications(tagSpecification)
-                .withUserData(Base64.getEncoder().encodeToString(Files.readAllBytes(Paths.get("launch-configurations/manager-replica-instance.yml"))))
-                .withMinCount(1)
-                .withMaxCount(1);
-        RunInstancesResult result = ec2Client.runInstances(managerRequest);
+        RunInstancesResult result = ec2Client.runInstances(new ManagerInstance(IAMRole));
         System.out.println(result.getReservation().getReservationId());
     }
 }
