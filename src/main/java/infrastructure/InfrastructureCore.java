@@ -40,7 +40,7 @@ public class InfrastructureCore {
      * @return the arn of the new manager IAM role
      * @throws IOException thrown if you lack the manager assume role document
      */
-    public static String createManagerRole() throws IOException {
+    public static String createManagerRole() {
         AmazonIdentityManagement aim = AmazonIdentityManagementAsyncClientBuilder.standard()
                 .withRegion(Regions.EU_CENTRAL_1)
                 .withCredentials(cp)

@@ -1,9 +1,6 @@
 package aws;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.auth.PropertiesCredentials;
+import com.amazonaws.auth.*;
 
 import java.io.IOException;
 
@@ -19,7 +16,7 @@ public class CredentialsFetch {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (NullPointerException e) {
-            return new DefaultAWSCredentialsProviderChain();
+            return InstanceProfileCredentialsProvider.getInstance();
         }
 
         final AWSCredentials finalCredentials = credentials;
