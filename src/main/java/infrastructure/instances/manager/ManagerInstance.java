@@ -35,7 +35,7 @@ public class ManagerInstance extends RunInstancesRequest {
         withInstanceType(InstanceType.T2Micro);
         withTagSpecifications(tagSpecification);
         withIamInstanceProfile(managerIAM);
-        withUserData(Base64.getEncoder().encodeToString(new Scanner(ManagerInstance.class.getResourceAsStream("manager-replica-instance.yml"), "UTF-8").useDelimiter("\\A").next().getBytes()));
+        withUserData(Base64.getEncoder().encodeToString(new Scanner(ManagerInstance.class.getResourceAsStream("/manager-replica-instance.yml"), "UTF-8").useDelimiter("\\A").next().getBytes()));
         withMinCount(1);
         withMaxCount(1);
     }
