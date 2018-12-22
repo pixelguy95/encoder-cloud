@@ -1,6 +1,14 @@
 package infrastructure.instances.manager;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.*;
+import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
+import com.amazonaws.services.identitymanagement.AmazonIdentityManagementAsyncClientBuilder;
+import com.amazonaws.services.identitymanagement.model.InstanceProfile;
+import infrastructure.iam.InstanceProfileCreator;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -29,6 +37,46 @@ public class ManagerInstance extends RunInstancesRequest {
         withUserData(Base64.getEncoder().encodeToString(Files.readAllBytes(Paths.get("launch-configurations/manager-replica-instance.yml"))));
         withMinCount(1);
         withMaxCount(1);
+    }
+
+    /**
+     * Creates a new IAM role for the manager
+     *
+     * Starts by creating the role, then attaches the EC2 policy to the new role
+     *
+     * @return the arn of the new manager IAM role
+     * @throws IOException thrown if you lack the manager assume role document
+     */
+    public static String createManagerRole(AmazonIdentityManagement aim) {
+        System.out.println("===Trying to create manager instance profile===");
+        InstanceProfile ip = InstanceProfileCreator.create(aim, "manager-role-v1", "manager-iam-instance-profile-v1", "arn:aws:iam::aws:policy/AmazonEC2FullAccess");
+
+        String arn = ip.getArn();
+        System.out.println("ARN: " + arn);
+        return arn;
+    }
+
+    public static void start(AWSCredentialsProvider cp) {
+        AmazonIdentityManagement aim = AmazonIdentityManagementAsyncClientBuilder.standard()
+                .withRegion(Regions.EU_CENTRAL_1)
+                .withCredentials(cp)
+                .build();
+
+        String arn = createManagerRole(aim);
+
+        AmazonEC2 ec2Client = AmazonEC2ClientBuilder.standard()
+                .withRegion(Regions.EU_CENTRAL_1)
+                .withCredentials(cp)
+                .build();
+
+
+        RunInstancesResult result = null;
+        try {
+            result = ec2Client.runInstances(new ManagerInstance(arn));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(result.getReservation().getReservationId());
     }
 
 }

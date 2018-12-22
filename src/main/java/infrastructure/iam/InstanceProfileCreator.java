@@ -17,6 +17,15 @@ public class InstanceProfileCreator {
             crr.setAssumeRolePolicyDocument(new String(Files.readAllBytes(Paths.get("iam-policy-json/instance-assume-role-document.json"))));
             aim.createRole(crr);
 
+            AttachRolePolicyRequest arpr = new AttachRolePolicyRequest();
+            arpr.setRoleName(roleName);
+            arpr.setPolicyArn(policyARN);
+            aim.attachRolePolicy(arpr);
+
+            DeleteInstanceProfileRequest dipr = new DeleteInstanceProfileRequest();
+            dipr.setInstanceProfileName(instanceProfileName);
+            aim.deleteInstanceProfile(dipr);
+
             CreateInstanceProfileRequest cipr = new CreateInstanceProfileRequest();
             cipr.setInstanceProfileName(instanceProfileName);
             aim.createInstanceProfile(cipr);
@@ -26,12 +35,8 @@ public class InstanceProfileCreator {
             artipr.setRoleName(roleName);
             aim.addRoleToInstanceProfile(artipr);
 
-            AttachRolePolicyRequest arpr = new AttachRolePolicyRequest();
-            arpr.setRoleName(roleName);
-            arpr.setPolicyArn(policyARN);
-            aim.attachRolePolicy(arpr);
         } catch (EntityAlreadyExistsException e) {
-            // Thrown if the role has already been created
+            System.out.println(e.getMessage());
         } catch (IOException e) {
             e.printStackTrace();
         }

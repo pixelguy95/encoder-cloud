@@ -4,14 +4,15 @@ import aws.CredentialsFetch;
 import client.prototypes.QueueChannelWrapper;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.apigateway.AmazonApiGateway;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
-import com.amazonaws.services.ec2.model.InstanceType;
-import com.amazonaws.services.ec2.model.RunInstancesRequest;
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagementAsyncClientBuilder;
+import com.amazonaws.util.EC2MetadataUtils;
+import infrastructure.instances.manager.ManagerInstance;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ManagerCore implements Runnable {
 
@@ -19,16 +20,39 @@ public class ManagerCore implements Runnable {
     private boolean replica;
     private AmazonEC2 ec2Client;
 
-    public ManagerCore() {
+    public ManagerCore() throws InterruptedException {
         AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
-
-
 
         ec2Client = AmazonEC2ClientBuilder.standard()
                 .withRegion(Regions.EU_CENTRAL_1)
                 .withCredentials(cp)
                 .build();
 
+        if(countManagerInstances() > 0) {
+            replica = true;
+        }
+
+        log("is replica : " + replica);
+
+        while(replica) {
+            Thread.sleep(5000);
+            if(countManagerInstances() == 1) {
+                replica = false;
+            }
+        }
+
+        startReplica();
+
+        new Thread(this).start();
+    }
+
+    private void startReplica() {
+        AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
+        ManagerInstance.start(cp);
+    }
+
+    public int countManagerInstances() {
+        AtomicInteger count = new AtomicInteger();
         try {
             //TODO: replica if there already is a manager tagged instance running
             this.replica = false;
@@ -37,29 +61,32 @@ public class ManagerCore implements Runnable {
                             .forEach(instance -> instance.getTags().forEach(tag -> {
                                 if(tag.getKey().startsWith("manager"))
                                 {
-                                    replica = true;
+                                    count.getAndIncrement();
                                 }
                             })));
 
-            log("Is replica : " + replica);
+
         } catch (Exception e) {
             log(e.getMessage());
         }
 
-        //TODO: if master, start replica
-        //TODO: if replica wait for master to die
-
-        if(!replica) {
-
-        }
+        return count.get();
     }
 
     @Override
     public void run() {
+        while(true) {
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
+            log("[" + EC2MetadataUtils.getInstanceId() + "] I am manager I am alive");
+        }
     }
 
-    public static void main(String args[]) throws IOException, TimeoutException {
+    public static void main(String args[]) throws IOException, TimeoutException, InterruptedException {
 
         qcw = new QueueChannelWrapper();
         log("MANAGER STARTING");
