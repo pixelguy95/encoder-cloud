@@ -28,7 +28,7 @@ public class ManagerCore implements Runnable {
                 .withCredentials(cp)
                 .build();
 
-        if(countManagerInstances() > 0) {
+        if(countManagerInstances() > 1) {
             replica = true;
         }
 

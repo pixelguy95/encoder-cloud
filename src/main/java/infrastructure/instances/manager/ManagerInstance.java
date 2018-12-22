@@ -9,6 +9,7 @@ import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementAsyncClientBuilder;
 import com.amazonaws.services.identitymanagement.model.InstanceProfile;
 import infrastructure.iam.InstanceProfileCreator;
+import manager.ManagerCore;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,25 +20,31 @@ import java.util.Scanner;
 
 public class ManagerInstance extends RunInstancesRequest {
 
-    public ManagerInstance(String managerInstanceProfileARN) throws IOException {
-        Tag infrastructureTypeTag = new Tag();
-        infrastructureTypeTag.setKey("infrastructure-type");
-        infrastructureTypeTag.setValue("manager " + System.currentTimeMillis());
-        TagSpecification tagSpecification = new TagSpecification();
-        tagSpecification.setResourceType(ResourceType.Instance);
-        tagSpecification.setTags(Arrays.asList(infrastructureTypeTag));
+    public ManagerInstance(String managerInstanceProfileARN) {
 
-        IamInstanceProfileSpecification managerIAM = new IamInstanceProfileSpecification();
-        managerIAM.setArn(managerInstanceProfileARN);
+        try {
+            Tag infrastructureTypeTag = new Tag();
+            infrastructureTypeTag.setKey("infrastructure-type");
+            infrastructureTypeTag.setValue("manager " + System.currentTimeMillis());
+            TagSpecification tagSpecification = new TagSpecification();
+            tagSpecification.setResourceType(ResourceType.Instance);
+            tagSpecification.setTags(Arrays.asList(infrastructureTypeTag));
 
-        withImageId("ami-0bdf93799014acdc4");
-        withKeyName("laptop"); //CJs key, remove later
-        withInstanceType(InstanceType.T2Micro);
-        withTagSpecifications(tagSpecification);
-        withIamInstanceProfile(managerIAM);
-        withUserData(Base64.getEncoder().encodeToString(new Scanner(ManagerInstance.class.getResourceAsStream("/manager-replica-instance.yml"), "UTF-8").useDelimiter("\\A").next().getBytes()));
-        withMinCount(1);
-        withMaxCount(1);
+            IamInstanceProfileSpecification managerIAM = new IamInstanceProfileSpecification();
+            managerIAM.setArn(managerInstanceProfileARN);
+
+            withImageId("ami-0bdf93799014acdc4");
+            withKeyName("laptop"); //CJs key, remove later
+            withInstanceType(InstanceType.T2Micro);
+            withTagSpecifications(tagSpecification);
+            withIamInstanceProfile(managerIAM);
+            withUserData(Base64.getEncoder().encodeToString(new Scanner(ManagerInstance.class.getResourceAsStream("/manager-replica-instance.yml"), "UTF-8").useDelimiter("\\A").next().getBytes()));
+            withMinCount(1);
+            withMaxCount(1);
+        } catch (Exception e) {
+            ManagerCore.log(e.getMessage());
+        }
+
     }
 
     /**
@@ -70,13 +77,7 @@ public class ManagerInstance extends RunInstancesRequest {
                 .withCredentials(cp)
                 .build();
 
-
-        RunInstancesResult result = null;
-        try {
-            result = ec2Client.runInstances(new ManagerInstance(arn));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        RunInstancesResult result = ec2Client.runInstances(new ManagerInstance(arn));
         System.out.println(result.getReservation().getReservationId());
     }
 
