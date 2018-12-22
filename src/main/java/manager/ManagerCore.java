@@ -7,6 +7,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.apigateway.AmazonApiGateway;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
+import com.amazonaws.services.ec2.model.InstanceState;
 import com.amazonaws.util.EC2MetadataUtils;
 import infrastructure.instances.manager.ManagerInstance;
 
@@ -59,7 +60,7 @@ public class ManagerCore implements Runnable {
             //TODO: replica if there already is a manager tagged instance running
             this.replica = false;
             ec2Client.describeInstances().getReservations()
-                    .forEach(reservation-> reservation.getInstances()
+                    .forEach(reservation-> reservation.getInstances().stream().filter(i->i.getState().getCode() == 16)
                             .forEach(instance -> instance.getTags().forEach(tag -> {
                                 if(tag.getValue().startsWith("manager"))
                                 {

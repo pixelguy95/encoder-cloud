@@ -65,20 +65,24 @@ public class ManagerInstance extends RunInstancesRequest {
     }
 
     public static void start(AWSCredentialsProvider cp) {
-        AmazonIdentityManagement aim = AmazonIdentityManagementAsyncClientBuilder.standard()
-                .withRegion(Regions.EU_CENTRAL_1)
-                .withCredentials(cp)
-                .build();
+        try {
+            AmazonIdentityManagement aim = AmazonIdentityManagementAsyncClientBuilder.standard()
+                    .withRegion(Regions.EU_CENTRAL_1)
+                    .withCredentials(cp)
+                    .build();
 
-        String arn = createManagerRole(aim);
+            String arn = createManagerRole(aim);
 
-        AmazonEC2 ec2Client = AmazonEC2ClientBuilder.standard()
-                .withRegion(Regions.EU_CENTRAL_1)
-                .withCredentials(cp)
-                .build();
+            AmazonEC2 ec2Client = AmazonEC2ClientBuilder.standard()
+                    .withRegion(Regions.EU_CENTRAL_1)
+                    .withCredentials(cp)
+                    .build();
 
-        RunInstancesResult result = ec2Client.runInstances(new ManagerInstance(arn));
-        System.out.println(result.getReservation().getReservationId());
+            RunInstancesResult result = ec2Client.runInstances(new ManagerInstance(arn));
+            System.out.println(result.getReservation().getReservationId());
+        } catch (Exception e) {
+            ManagerCore.log(e.getMessage());
+        }
     }
 
 }
