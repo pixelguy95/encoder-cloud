@@ -1,0 +1,32 @@
+#cloud-config
+#MEncoder launch config
+repo_update: true
+repo_upgrade: all
+
+packages:
+- git
+- unzip
+- openjdk-8-jdk
+
+runcmd:
+
+#Install latest gradle dist
+- wget https://services.gradle.org/distributions/gradle-5.0-bin.zip -P /tmp
+- unzip -d /opt/gradle /tmp/gradle-*.zip
+- echo 'export GRADLE_HOME=/opt/gradle/gradle-5.0' >> /etc/profile.d/gradle.sh
+- echo 'export PATH=${GRADLE_HOME}/bin:${PATH}' >> /etc/profile.d/gradle.sh
+- chmod +x /etc/profile.d/gradle.sh
+- source /etc/profile.d/gradle.sh
+
+#Install MEncoder
+- echo 'deb http://us.archive.ubuntu.com/ubuntu trusty main universe' >> /etc/apt/sources.list
+- apt-get --yes update
+- apt-get --yes mencoder
+
+#download git repo and install and run
+- cd /home/ubuntu
+- wget https://github.com/pixelguy95/encoder-cloud/archive/master.zip
+- unzip master.zip
+- cd encoder-cloud-master
+- sudo /opt/gradle/gradle-5.0/bin/gradle managerJar
+- tmux new-session -d -s encoder_session 'java -jar build/libs/encoder-cloud-manager*.jar'

@@ -41,7 +41,9 @@ public class ManagerCore implements Runnable {
             }
         }
 
+        log("starting replica");
         startReplica();
+        log("replica started");
 
         new Thread(this).start();
     }
@@ -59,13 +61,11 @@ public class ManagerCore implements Runnable {
             ec2Client.describeInstances().getReservations()
                     .forEach(reservation-> reservation.getInstances()
                             .forEach(instance -> instance.getTags().forEach(tag -> {
-                                if(tag.getKey().startsWith("manager"))
+                                if(tag.getValue().startsWith("manager"))
                                 {
                                     count.getAndIncrement();
                                 }
                             })));
-
-
         } catch (Exception e) {
             log(e.getMessage());
         }
@@ -92,8 +92,6 @@ public class ManagerCore implements Runnable {
         log("MANAGER STARTING");
 
         new ManagerCore();
-
-        qcw.shutdown();
     }
 
     /**

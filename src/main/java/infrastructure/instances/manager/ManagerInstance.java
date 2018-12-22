@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Scanner;
 
 public class ManagerInstance extends RunInstancesRequest {
 
@@ -34,7 +35,7 @@ public class ManagerInstance extends RunInstancesRequest {
         withInstanceType(InstanceType.T2Micro);
         withTagSpecifications(tagSpecification);
         withIamInstanceProfile(managerIAM);
-        withUserData(Base64.getEncoder().encodeToString(Files.readAllBytes(Paths.get("launch-configurations/manager-replica-instance.yml"))));
+        withUserData(Base64.getEncoder().encodeToString(new Scanner(ManagerInstance.class.getResourceAsStream("foo.txt"), "UTF-8").useDelimiter("\\A").next().getBytes()));
         withMinCount(1);
         withMaxCount(1);
     }
