@@ -22,34 +22,29 @@ public class ManagerInstance extends RunInstancesRequest {
 
     public ManagerInstance(String managerInstanceProfileARN) {
 
-        try {
-            Tag infrastructureTypeTag = new Tag();
-            infrastructureTypeTag.setKey("infrastructure-type");
-            infrastructureTypeTag.setValue("manager " + System.currentTimeMillis());
-            TagSpecification tagSpecification = new TagSpecification();
-            tagSpecification.setResourceType(ResourceType.Instance);
-            tagSpecification.setTags(Arrays.asList(infrastructureTypeTag));
+        Tag infrastructureTypeTag = new Tag();
+        infrastructureTypeTag.setKey("infrastructure-type");
+        infrastructureTypeTag.setValue("manager " + System.currentTimeMillis());
+        TagSpecification tagSpecification = new TagSpecification();
+        tagSpecification.setResourceType(ResourceType.Instance);
+        tagSpecification.setTags(Arrays.asList(infrastructureTypeTag));
 
-            IamInstanceProfileSpecification managerIAM = new IamInstanceProfileSpecification();
-            managerIAM.setArn(managerInstanceProfileARN);
+        IamInstanceProfileSpecification managerIAM = new IamInstanceProfileSpecification();
+        managerIAM.setArn(managerInstanceProfileARN);
 
-            withImageId("ami-0bdf93799014acdc4");
-            withKeyName("laptop"); //CJs key, remove later
-            withInstanceType(InstanceType.T2Micro);
-            withTagSpecifications(tagSpecification);
-            withIamInstanceProfile(managerIAM);
-            withUserData(Base64.getEncoder().encodeToString(new Scanner(ManagerInstance.class.getResourceAsStream("/manager-replica-instance.yml"), "UTF-8").useDelimiter("\\A").next().getBytes()));
-            withMinCount(1);
-            withMaxCount(1);
-        } catch (Exception e) {
-            ManagerCore.log(e.getMessage());
-        }
-
+        withImageId("ami-0bdf93799014acdc4");
+        withKeyName("laptop"); //CJs key, remove later
+        withInstanceType(InstanceType.T2Micro);
+        withTagSpecifications(tagSpecification);
+        withIamInstanceProfile(managerIAM);
+        withUserData(Base64.getEncoder().encodeToString(new Scanner(ManagerInstance.class.getResourceAsStream("/manager-replica-instance.yml"), "UTF-8").useDelimiter("\\A").next().getBytes()));
+        withMinCount(1);
+        withMaxCount(1);
     }
 
     /**
      * Creates a new IAM role for the manager
-     *
+     * <p>
      * Starts by creating the role, then attaches the EC2 policy to the new role
      *
      * @return the arn of the new manager IAM role
@@ -65,24 +60,20 @@ public class ManagerInstance extends RunInstancesRequest {
     }
 
     public static void start(AWSCredentialsProvider cp) {
-        try {
-            AmazonIdentityManagement aim = AmazonIdentityManagementAsyncClientBuilder.standard()
-                    .withRegion(Regions.EU_CENTRAL_1)
-                    .withCredentials(cp)
-                    .build();
+        AmazonIdentityManagement aim = AmazonIdentityManagementAsyncClientBuilder.standard()
+                .withRegion(Regions.EU_CENTRAL_1)
+                .withCredentials(cp)
+                .build();
 
-            String arn = createManagerRole(aim);
+        String arn = createManagerRole(aim);
 
-            AmazonEC2 ec2Client = AmazonEC2ClientBuilder.standard()
-                    .withRegion(Regions.EU_CENTRAL_1)
-                    .withCredentials(cp)
-                    .build();
+        AmazonEC2 ec2Client = AmazonEC2ClientBuilder.standard()
+                .withRegion(Regions.EU_CENTRAL_1)
+                .withCredentials(cp)
+                .build();
 
-            RunInstancesResult result = ec2Client.runInstances(new ManagerInstance(arn));
-            System.out.println(result.getReservation().getReservationId());
-        } catch (Exception e) {
-            ManagerCore.log(e.getMessage());
-        }
+        RunInstancesResult result = ec2Client.runInstances(new ManagerInstance(arn));
+        System.out.println(result.getReservation().getReservationId());
     }
 
 }

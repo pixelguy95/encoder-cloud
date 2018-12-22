@@ -39,6 +39,8 @@ public class InstanceProfileCreator {
             System.out.println(e.getMessage());
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (Exception e) {
+            
         }
 
         GetInstanceProfileRequest gipr = new GetInstanceProfileRequest();
