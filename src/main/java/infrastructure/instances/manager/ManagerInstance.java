@@ -7,6 +7,7 @@ import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementAsyncClientBuilder;
+import com.amazonaws.services.identitymanagement.model.GetInstanceProfileRequest;
 import com.amazonaws.services.identitymanagement.model.InstanceProfile;
 import infrastructure.iam.InstanceProfileCreator;
 import manager.ManagerCore;
@@ -65,7 +66,15 @@ public class ManagerInstance extends RunInstancesRequest {
                 .withCredentials(cp)
                 .build();
 
-        String arn = createManagerRole(aim);
+        try{
+            createManagerRole(aim);
+        } catch (Exception e) {
+            ManagerCore.log(e.getMessage());
+        }
+
+        GetInstanceProfileRequest gipr = new GetInstanceProfileRequest();
+        gipr.setInstanceProfileName("manager-iam-instance-profile-v1");
+        String arn = aim.getInstanceProfile(gipr).getInstanceProfile().getArn();
 
         AmazonEC2 ec2Client = AmazonEC2ClientBuilder.standard()
                 .withRegion(Regions.EU_CENTRAL_1)
