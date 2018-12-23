@@ -6,10 +6,11 @@ import com.amazonaws.services.identitymanagement.model.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 
 public class InstanceProfileCreator {
 
-    public static InstanceProfile create(AmazonIdentityManagement aim, String roleName, String instanceProfileName, String policyARN) {
+    public static InstanceProfile create(AmazonIdentityManagement aim, String roleName, String instanceProfileName, List<String> policyARNs) {
         try {
             CreateRoleRequest crr = new CreateRoleRequest();
             crr.setRoleName(roleName);
@@ -17,10 +18,12 @@ public class InstanceProfileCreator {
             crr.setAssumeRolePolicyDocument(new String(Files.readAllBytes(Paths.get("iam-policy-json/instance-assume-role-document.json"))));
             aim.createRole(crr);
 
-            AttachRolePolicyRequest arpr = new AttachRolePolicyRequest();
-            arpr.setRoleName(roleName);
-            arpr.setPolicyArn(policyARN);
-            aim.attachRolePolicy(arpr);
+            for(String policyARN : policyARNs) {
+                AttachRolePolicyRequest arpr = new AttachRolePolicyRequest();
+                arpr.setRoleName(roleName);
+                arpr.setPolicyArn(policyARN);
+                aim.attachRolePolicy(arpr);
+            }
 
             DeleteInstanceProfileRequest dipr = new DeleteInstanceProfileRequest();
             dipr.setInstanceProfileName(instanceProfileName);
@@ -40,7 +43,7 @@ public class InstanceProfileCreator {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (Exception e) {
-            
+
         }
 
         GetInstanceProfileRequest gipr = new GetInstanceProfileRequest();

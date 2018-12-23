@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 import java.util.Scanner;
 
 public class ManagerInstance extends RunInstancesRequest {
@@ -53,7 +54,10 @@ public class ManagerInstance extends RunInstancesRequest {
      */
     public static String createManagerRole(AmazonIdentityManagement aim) {
         System.out.println("===Trying to create manager instance profile===");
-        InstanceProfile ip = InstanceProfileCreator.create(aim, "manager-role-v1", "manager-iam-instance-profile-v1", "arn:aws:iam::aws:policy/AmazonEC2FullAccess");
+        List<String> policyARNs = Arrays.asList(
+                "arn:aws:iam::aws:policy/AmazonEC2FullAccess",
+                "arn:aws:iam::aws:policy/IAMReadOnlyAccess");
+        InstanceProfile ip = InstanceProfileCreator.create(aim, "manager-role-v1", "manager-iam-instance-profile-v1", policyARNs);
 
         String arn = ip.getArn();
         System.out.println("ARN: " + arn);
