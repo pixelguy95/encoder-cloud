@@ -76,17 +76,28 @@ public class ManagerInstance extends RunInstancesRequest {
             ManagerCore.log(e.getMessage());
         }
 
-        GetInstanceProfileRequest gipr = new GetInstanceProfileRequest();
-        gipr.setInstanceProfileName("manager-iam-instance-profile-v1");
-        String arn = aim.getInstanceProfile(gipr).getInstanceProfile().getArn();
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
-        AmazonEC2 ec2Client = AmazonEC2ClientBuilder.standard()
-                .withRegion(Regions.EU_CENTRAL_1)
-                .withCredentials(cp)
-                .build();
+        try {
+            GetInstanceProfileRequest gipr = new GetInstanceProfileRequest();
+            gipr.setInstanceProfileName("manager-iam-instance-profile-v1");
+            String arn = aim.getInstanceProfile(gipr).getInstanceProfile().getArn();
 
-        RunInstancesResult result = ec2Client.runInstances(new ManagerInstance(arn));
-        System.out.println(result.getReservation().getReservationId());
+            AmazonEC2 ec2Client = AmazonEC2ClientBuilder.standard()
+                    .withRegion(Regions.EU_CENTRAL_1)
+                    .withCredentials(cp)
+                    .build();
+
+            RunInstancesResult result = ec2Client.runInstances(new ManagerInstance(arn));
+            System.out.println(result.getReservation().getReservationId());
+        } catch (Exception e) {
+            ManagerCore.log(e.getMessage());
+        }
+
     }
 
 }

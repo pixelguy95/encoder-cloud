@@ -50,8 +50,13 @@ public class ManagerCore implements Runnable {
     }
 
     private void startReplica() {
-        AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
-        ManagerInstance.start(cp);
+        try {
+            AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
+            ManagerInstance.start(cp);
+        } catch (Exception e) {
+            ManagerCore.log(e.getMessage());
+        }
+
     }
 
     public int countManagerInstances() {
