@@ -2,11 +2,13 @@ package infrastructure.iam;
 
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.model.*;
+import infrastructure.instances.manager.ManagerInstance;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Scanner;
 
 public class InstanceProfileCreator {
 
@@ -15,7 +17,9 @@ public class InstanceProfileCreator {
             CreateRoleRequest crr = new CreateRoleRequest();
             crr.setRoleName(roleName);
             crr.setDescription("This is empty right now");
-            crr.setAssumeRolePolicyDocument(new String(Files.readAllBytes(Paths.get("iam-policy-json/instance-assume-role-document.json"))));
+
+            String s = new Scanner(ManagerInstance.class.getResourceAsStream("/instance-assume-role-document"), "UTF-8").useDelimiter("\\A").next();
+            crr.setAssumeRolePolicyDocument(s);
             aim.createRole(crr);
 
             for(String policyARN : policyARNs) {
@@ -40,8 +44,6 @@ public class InstanceProfileCreator {
 
         } catch (EntityAlreadyExistsException e) {
             System.out.println(e.getMessage());
-        } catch (IOException e) {
-            e.printStackTrace();
         } catch (Exception e) {
 
         }

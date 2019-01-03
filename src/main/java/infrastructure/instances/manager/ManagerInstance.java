@@ -100,7 +100,7 @@ public class ManagerInstance extends RunInstancesRequest {
                     .withCredentials(cp)
                     .build();
 
-            ManagerCore.log("I failed here 7");
+            ManagerCore.log("I failed here 7 " + arn);
 
             RunInstancesResult result = ec2Client.runInstances(new ManagerInstance(arn));
             ManagerCore.log("I failed here 8");
