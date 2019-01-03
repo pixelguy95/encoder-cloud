@@ -18,7 +18,7 @@ public class InstanceProfileCreator {
             crr.setRoleName(roleName);
             crr.setDescription("This is empty right now");
 
-            String s = new Scanner(ManagerInstance.class.getResourceAsStream("/instance-assume-role-document"), "UTF-8").useDelimiter("\\A").next();
+            String s = new Scanner(ManagerInstance.class.getResourceAsStream("/instance-assume-role-document.json"), "UTF-8").useDelimiter("\\A").next();
             crr.setAssumeRolePolicyDocument(s);
             aim.createRole(crr);
 
@@ -45,7 +45,9 @@ public class InstanceProfileCreator {
         } catch (EntityAlreadyExistsException e) {
             System.out.println(e.getMessage());
         } catch (Exception e) {
-
+            System.out.println("Error");
+            System.out.println(e.getClass().getName());
+            System.out.println(e.getMessage());
         }
 
         GetInstanceProfileRequest gipr = new GetInstanceProfileRequest();
