@@ -56,7 +56,7 @@ public class ManagerInstance extends RunInstancesRequest {
         System.out.println("===Trying to create manager instance profile===");
         List<String> policyARNs = Arrays.asList(
                 "arn:aws:iam::aws:policy/AmazonEC2FullAccess",
-                "arn:aws:iam::aws:policy/IAMReadOnlyAccess");
+                "arn:aws:iam::aws:policy/IAMFullAccess");
         InstanceProfile ip = InstanceProfileCreator.create(aim, "manager-role-v1", "manager-iam-instance-profile-v1", policyARNs);
 
         String arn = ip.getArn();
