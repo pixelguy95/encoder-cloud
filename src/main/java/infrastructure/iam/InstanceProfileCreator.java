@@ -29,6 +29,7 @@ public class InstanceProfileCreator {
                 aim.attachRolePolicy(arpr);
             }
 
+
             DeleteInstanceProfileRequest dipr = new DeleteInstanceProfileRequest();
             dipr.setInstanceProfileName(instanceProfileName);
             aim.deleteInstanceProfile(dipr);
@@ -48,6 +49,7 @@ public class InstanceProfileCreator {
             System.out.println("Error");
             System.out.println(e.getClass().getName());
             System.out.println(e.getMessage());
+            System.exit(0);
         }
 
         GetInstanceProfileRequest gipr = new GetInstanceProfileRequest();
