@@ -38,6 +38,7 @@ public class ManagerCore implements Runnable {
         while(replica) {
             Thread.sleep(5000);
             if(countManagerInstances() == 1) {
+                log("manager must have died: " + countManagerInstances());
                 replica = false;
             }
         }
@@ -94,10 +95,14 @@ public class ManagerCore implements Runnable {
 
     public static void main(String args[]) throws IOException, TimeoutException, InterruptedException {
 
-        qcw = new QueueChannelWrapper();
+        createQueueWrapper();
         log("MANAGER STARTING");
 
         new ManagerCore();
+    }
+
+    public static void createQueueWrapper() throws IOException, TimeoutException {
+        qcw = new QueueChannelWrapper();
     }
 
     /**
