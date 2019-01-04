@@ -59,32 +59,54 @@ public class EncoderCore {
                 CredentialsFetch.getCredentialsProvider().getCredentials().getAWSSecretKey());
     }
 
-    public File getFile() throws URISyntaxException {
-
-        return new File(EncoderCore.class.getResource("/sample_video.mp4").toURI());
-
-    }
-
-
     public List<S3ObjectSummary> listFilesS3() {
 
         ListObjectsV2Result result = amazonS3Client.listObjectsV2(bucket_name);
         return result.getObjectSummaries();
     }
 
+    private void uploadConvertedFileToS3(String fileName, String path) {
 
-    public void getFileFromS3(String key) throws IOException {
 
-        System.out.println("Saving file to: " + Paths.get(".").toAbsolutePath().normalize().toString());
-
-        //This is where the downloaded file will be saved
-        File localFile = new File("E:\\Skolarbete\\Skolarbete Teknisk Data\\Cloud Computing\\assignment-encod3r-cloud\\encoder-cloud\\TEST.mp4");
-        amazonS3Client.getObject(new GetObjectRequest(bucket_name, key), localFile);
-
-        if(localFile.exists() && localFile.canRead()) {
-            System.out.println("File successfully downloaded: " + localFile.getAbsolutePath());
+        if (!amazonS3Client.doesObjectExist(bucket_name, fileName)) {
+            System.out.println("Uploading...");
+            try {
+                amazonS3Client.putObject(bucket_name, fileName, new File(path));
+            } catch (AmazonServiceException e) {
+                System.err.println(e.getErrorMessage());
+            }
+            System.out.println("Done!");
         }
     }
+
+
+    public void getFileFromS3(String keyName) throws IOException {
+
+        System.out.println("Saving file to: " + "movies/unconverted");
+
+        //This is where the downloaded file will be saved
+        File localFile = new File(".".concat(keyName));
+        amazonS3Client.getObject(new GetObjectRequest(bucket_name, keyName), localFile);
+
+        if (localFile.exists() && localFile.canRead()) {
+
+            System.out.println("File successfully downloaded: " + localFile.getAbsolutePath());
+            System.out.println("Converting file...");
+
+
+            ProcessBuilder pb = new ProcessBuilder("mencoder", localFile.getAbsolutePath(), "mp3lame", "-ovc", "lavc", "-o", localFile.getName().concat("converted").concat(".avi"));
+            Process p = pb.start();
+            try {
+                p.waitFor();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            if (p.exitValue() == 0) {
+                uploadConvertedFileToS3(keyName.concat(".mp4"), "movies/converted/");
+            }
+        }
+    }
+
 
     private void displayTextInputStream(InputStream input) throws IOException {
         // Read the text input stream one line at a time and display each line.
@@ -95,7 +117,6 @@ public class EncoderCore {
         }
         System.out.println();
     }
-
 
 
     public void initRabbitMQConnection() {
@@ -140,8 +161,9 @@ public class EncoderCore {
 
 
         EncoderCore core = new EncoderCore();
-        core.initRabbitMQConnection();
+//        core.createEncoderInstance();
 
+        core.initRabbitMQConnection();
 
         for (S3ObjectSummary list : core.listFilesS3()) {
 
@@ -154,23 +176,10 @@ public class EncoderCore {
             core.getFileFromS3(message);
         };
         try {
-            core.channel.basicConsume(ENCODING_REQUEST_QUEUE, true, deliverCallback, consumerTag -> { });
+            core.channel.basicConsume(ENCODING_REQUEST_QUEUE, true, deliverCallback, consumerTag -> {
+            });
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
-//
-//        try {
-//
-//            PutObjectRequest uploadRequest = new PutObjectRequest("nico-encoder-bucket", "converted/" + core.getFile().getName(), core.getFile());
-//            PutObjectResult uploadResponse = core.s3Client.putObject(uploadRequest);
-//            System.out.println(uploadResponse);
-//
-//
-//        } catch (URISyntaxException e) {
-//            e.printStackTrace();
-//        }
-
     }
 }

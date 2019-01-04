@@ -64,11 +64,11 @@ task logPrototypeJar(type: Jar) {
     exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
 }
 
-task encoderPrototypeConsumer(type: Jar) {
+task encoderJar(type: Jar) {
     manifest {
-        attributes 'Implementation-Title': 'encoder-cloud-prototype-encoder',
+        attributes 'Implementation-Title': 'encoder-cloud-encoder',
                 'Implementation-Version': version,
-                'Main-Class': 'client.prototypes.QueueConsumerPrototype'
+                'Main-Class': 'encoder.EncoderCore'
     }
     baseName = project.name + '-encoder'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
