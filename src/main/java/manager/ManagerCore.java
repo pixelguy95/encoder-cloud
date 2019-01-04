@@ -67,7 +67,6 @@ public class ManagerCore implements Runnable {
         AtomicInteger count = new AtomicInteger();
         try {
             //TODO: replica if there already is a manager tagged instance running
-            this.replica = false;
             ec2Client.describeInstances().getReservations()
                     .forEach(reservation-> reservation.getInstances().stream().filter(i->i.getState().getCode() == 16)
                             .forEach(instance -> instance.getTags().forEach(tag -> {
