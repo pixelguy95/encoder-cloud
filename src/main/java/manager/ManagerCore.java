@@ -33,7 +33,7 @@ public class ManagerCore implements Runnable {
             replica = true;
         }
 
-        log("is replica : " + replica);
+        log("is replica: " + replica);
 
         while(replica) {
             log("Im inside!");
@@ -43,6 +43,8 @@ public class ManagerCore implements Runnable {
                 replica = false;
             }
         }
+
+        log("is replica 2: " + replica);
 
         log("starting replica");
         startReplica();
