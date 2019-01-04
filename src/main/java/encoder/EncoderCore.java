@@ -163,6 +163,7 @@ public class EncoderCore {
 
         EncoderCore core = new EncoderCore();
         core.createEncoderInstance();
+
         //        core.initRabbitMQConnection();
 //
 //
