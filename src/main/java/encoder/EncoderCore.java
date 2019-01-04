@@ -65,10 +65,10 @@ public class EncoderCore {
         return result.getObjectSummaries();
     }
 
-    private void uploadConvertedFileToS3(String fileName, String path){
+    private void uploadConvertedFileToS3(String fileName, String path) {
 
 
-        if(!amazonS3Client.doesObjectExist(bucket_name, fileName)) {
+        if (!amazonS3Client.doesObjectExist(bucket_name, fileName)) {
             System.out.println("Uploading...");
             try {
                 amazonS3Client.putObject(bucket_name, fileName, new File(path));
@@ -88,7 +88,7 @@ public class EncoderCore {
         File localFile = new File("movies/unconverted/".concat(keyName));
         amazonS3Client.getObject(new GetObjectRequest(bucket_name, keyName), localFile);
 
-        if(localFile.exists() && localFile.canRead()) {
+        if (localFile.exists() && localFile.canRead()) {
 
             System.out.println("File successfully downloaded: " + localFile.getAbsolutePath());
             System.out.println("Converting file...");
@@ -101,7 +101,7 @@ public class EncoderCore {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            if(p.exitValue() == 0){
+            if (p.exitValue() == 0) {
                 uploadConvertedFileToS3(keyName.concat(".mp4"), "movies/converted/");
             }
         }
@@ -117,7 +117,6 @@ public class EncoderCore {
         }
         System.out.println();
     }
-
 
 
     public void initRabbitMQConnection() {
@@ -162,26 +161,25 @@ public class EncoderCore {
 
 
         EncoderCore core = new EncoderCore();
-        core.createEncoderInstance();
+//        core.createEncoderInstance();
 
-        //        core.initRabbitMQConnection();
-//
-//
-//        for (S3ObjectSummary list : core.listFilesS3()) {
-//
-//            System.out.println(list);
-//        }
-//
-//
-//        DeliverCallback deliverCallback = (consumerTag, delivery) -> {
-//            String message = new String(delivery.getBody(), "UTF-8");
-//            System.out.println(" [x] Received '" + message + "'");
-//            core.getFileFromS3(message);
-//        };
-//        try {
-//            core.channel.basicConsume(ENCODING_REQUEST_QUEUE, true, deliverCallback, consumerTag -> { });
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        core.initRabbitMQConnection();
+
+        for (S3ObjectSummary list : core.listFilesS3()) {
+
+            System.out.println(list);
+        }
+
+        DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+            String message = new String(delivery.getBody(), "UTF-8");
+            System.out.println(" [x] Received '" + message + "'");
+            core.getFileFromS3(message);
+        };
+        try {
+            core.channel.basicConsume(ENCODING_REQUEST_QUEUE, true, deliverCallback, consumerTag -> {
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
