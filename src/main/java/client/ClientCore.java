@@ -40,8 +40,7 @@ public class ClientCore {
     }
 
     private static void createBucket(String bucketName) {
-
-        if(!s3.doesBucketExist(bucketName)) {
+        if(!s3.doesBucketExistV2(bucketName)) {
             System.out.println("Create bucket");
             s3.createBucket(bucketName);
         }
