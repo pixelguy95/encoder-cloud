@@ -36,6 +36,7 @@ public class ManagerCore implements Runnable {
         log("is replica : " + replica);
 
         while(replica) {
+            log("Im inside!");
             Thread.sleep(5000);
             if(countManagerInstances() == 1) {
                 log("manager must have died: " + countManagerInstances());
