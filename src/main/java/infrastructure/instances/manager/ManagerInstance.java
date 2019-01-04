@@ -76,41 +76,29 @@ public class ManagerInstance extends RunInstancesRequest {
             ManagerCore.log(e.getMessage());
         }
 
-        ManagerCore.log("I failed here 1");
-
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
-        ManagerCore.log("I failed here 2");
-
         try {
-            ManagerCore.log("I failed here 3");
             GetInstanceProfileRequest gipr = new GetInstanceProfileRequest();
-            ManagerCore.log("I failed here 4");
             gipr.setInstanceProfileName("manager-iam-instance-profile-v1");
-            ManagerCore.log("I failed here 5");
             String arn = aim.getInstanceProfile(gipr).getInstanceProfile().getArn();
-            ManagerCore.log("I failed here 6");
 
             AmazonEC2 ec2Client = AmazonEC2ClientBuilder.standard()
                     .withRegion(Regions.EU_CENTRAL_1)
                     .withCredentials(cp)
                     .build();
 
-            ManagerCore.log("I failed here 7 " + arn);
-
             RunInstancesResult result = ec2Client.runInstances(new ManagerInstance(arn));
-            ManagerCore.log("I failed here 8");
 
             System.out.println(result.getReservation().getReservationId());
         } catch (Exception e) {
             ManagerCore.log(e.getMessage());
         }
 
-        ManagerCore.log("I failed here end");
     }
 
 }

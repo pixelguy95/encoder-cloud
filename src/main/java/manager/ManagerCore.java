@@ -33,8 +33,6 @@ public class ManagerCore implements Runnable {
             replica = true;
         }
 
-        log("is replica : " + replica);
-
         while(replica) {
             Thread.sleep(5000);
             if(countManagerInstances() == 1) {
@@ -64,7 +62,6 @@ public class ManagerCore implements Runnable {
         AtomicInteger count = new AtomicInteger();
         try {
             //TODO: replica if there already is a manager tagged instance running
-            this.replica = false;
             ec2Client.describeInstances().getReservations()
                     .forEach(reservation-> reservation.getInstances().stream().filter(i->i.getState().getCode() == 16)
                             .forEach(instance -> instance.getTags().forEach(tag -> {
@@ -84,12 +81,12 @@ public class ManagerCore implements Runnable {
     public void run() {
         while(true) {
             try {
-                Thread.sleep(5000);
+                Thread.sleep(10000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
-            log("[" + EC2MetadataUtils.getInstanceId() + "] I am manager I am alive");
+            log("I am manager I am alive");
         }
     }
 
@@ -111,6 +108,15 @@ public class ManagerCore implements Runnable {
      */
     public static void log(String message) {
         try {
+
+            String identity = "[unknown]";
+            try{
+                identity = "[" + EC2MetadataUtils.getInstanceId() + "]";
+            } catch (Exception e) {
+
+            }
+
+            message = identity + " " + message;
             qcw.channel.basicPublish("", QueueChannelWrapper.BASIC_LOG_QUEUE, null, message.getBytes());
         } catch (IOException e) {
         }

@@ -29,7 +29,6 @@ public class InstanceProfileCreator {
                 aim.attachRolePolicy(arpr);
             }
 
-
             DeleteInstanceProfileRequest dipr = new DeleteInstanceProfileRequest();
             dipr.setInstanceProfileName(instanceProfileName);
             aim.deleteInstanceProfile(dipr);
