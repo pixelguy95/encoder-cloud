@@ -82,7 +82,7 @@ public class EncoderCore {
         amazonS3Client.getObject(new GetObjectRequest(bucket_name, key), localFile);
 
         if(localFile.exists() && localFile.canRead()) {
-            System.out.println("File successfully downloaded: " + localFile.getAbsolutePath());;
+            System.out.println("File successfully downloaded: " + localFile.getAbsolutePath());
         }
     }
 
