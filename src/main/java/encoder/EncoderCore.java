@@ -162,24 +162,25 @@ public class EncoderCore {
 
 
         EncoderCore core = new EncoderCore();
-        core.initRabbitMQConnection();
-
-
-        for (S3ObjectSummary list : core.listFilesS3()) {
-
-            System.out.println(list);
-        }
-
-
-        DeliverCallback deliverCallback = (consumerTag, delivery) -> {
-            String message = new String(delivery.getBody(), "UTF-8");
-            System.out.println(" [x] Received '" + message + "'");
-            core.getFileFromS3(message);
-        };
-        try {
-            core.channel.basicConsume(ENCODING_REQUEST_QUEUE, true, deliverCallback, consumerTag -> { });
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        core.createEncoderInstance();
+        //        core.initRabbitMQConnection();
+//
+//
+//        for (S3ObjectSummary list : core.listFilesS3()) {
+//
+//            System.out.println(list);
+//        }
+//
+//
+//        DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+//            String message = new String(delivery.getBody(), "UTF-8");
+//            System.out.println(" [x] Received '" + message + "'");
+//            core.getFileFromS3(message);
+//        };
+//        try {
+//            core.channel.basicConsume(ENCODING_REQUEST_QUEUE, true, deliverCallback, consumerTag -> { });
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 }
