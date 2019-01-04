@@ -33,15 +33,18 @@ public class ManagerCore implements Runnable {
             replica = true;
         }
 
-        log("is replica : " + replica);
+        log("is replica: " + replica);
 
         while(replica) {
+            log("Im inside!");
             Thread.sleep(5000);
             if(countManagerInstances() == 1) {
                 log("manager must have died: " + countManagerInstances());
                 replica = false;
             }
         }
+
+        log("is replica 2: " + replica);
 
         log("starting replica");
         startReplica();
