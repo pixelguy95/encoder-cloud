@@ -11,6 +11,10 @@ import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatchClientBuilder;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.*;
+import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
+import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder;
+import com.amazonaws.services.identitymanagement.model.ListAccessKeysRequest;
+import com.amazonaws.services.identitymanagement.model.ListAccessKeysResult;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
@@ -24,6 +28,7 @@ import infrastructure.instances.manager.ManagerInstance;
 
 import java.io.*;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.List;
 import java.util.Scanner;
@@ -44,7 +49,7 @@ public class EncoderCore {
 
         amazonS3Client = new AmazonS3Client(getAwsCredentials());
         amazonEC2Client = new AmazonEC2Client(getAwsCredentials());
-        ;;
+
 
     }
 
@@ -70,53 +75,14 @@ public class EncoderCore {
 
     public void getFileFromS3(String key) throws IOException {
 
-        S3Object fullObject = null, objectPortion = null, headerOverrideObject = null;
-        try {
+        System.out.println("Saving file to: " + Paths.get(".").toAbsolutePath().normalize().toString());
 
-            // Get an object and print its contents.
-            System.out.println("Downloading an object");
-            fullObject = amazonS3Client.getObject(new GetObjectRequest(bucket_name, key));
-            System.out.println("Content-Type: " + fullObject.getObjectMetadata().getContentType());
-            System.out.println("Content: ");
-            displayTextInputStream(fullObject.getObjectContent());
+        //This is where the downloaded file will be saved
+        File localFile = new File("E:\\Skolarbete\\Skolarbete Teknisk Data\\Cloud Computing\\assignment-encod3r-cloud\\encoder-cloud\\TEST.mp4");
+        amazonS3Client.getObject(new GetObjectRequest(bucket_name, key), localFile);
 
-            // Get a range of bytes from an object and print the bytes.
-            GetObjectRequest rangeObjectRequest = new GetObjectRequest(bucket_name, key)
-                    .withRange(0,9);
-            objectPortion = amazonS3Client.getObject(rangeObjectRequest);
-            System.out.println("Printing bytes retrieved.");
-            displayTextInputStream(objectPortion.getObjectContent());
-
-            // Get an entire object, overriding the specified response headers, and print the object's content.
-            ResponseHeaderOverrides headerOverrides = new ResponseHeaderOverrides()
-                    .withCacheControl("No-cache")
-                    .withContentDisposition("attachment; filename=example.txt");
-            GetObjectRequest getObjectRequestHeaderOverride = new GetObjectRequest(bucket_name, key)
-                    .withResponseHeaders(headerOverrides);
-            headerOverrideObject = amazonS3Client.getObject(getObjectRequestHeaderOverride);
-            displayTextInputStream(headerOverrideObject.getObjectContent());
-        }
-        catch(AmazonServiceException e) {
-            // The call was transmitted successfully, but Amazon S3 couldn't process
-            // it, so it returned an error response.
-            e.printStackTrace();
-        }
-        catch(SdkClientException e) {
-            // Amazon S3 couldn't be contacted for a response, or the client
-            // couldn't parse the response from Amazon S3.
-            e.printStackTrace();
-        }
-        finally {
-            // To ensure that the network connection doesn't remain open, close any open input streams.
-            if(fullObject != null) {
-                fullObject.close();
-            }
-            if(objectPortion != null) {
-                objectPortion.close();
-            }
-            if(headerOverrideObject != null) {
-                headerOverrideObject.close();
-            }
+        if(localFile.exists() && localFile.canRead()) {
+            System.out.println("File successfully downloaded: " + localFile.getAbsolutePath());
         }
     }
 
@@ -185,7 +151,7 @@ public class EncoderCore {
         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
             System.out.println(" [x] Received '" + message + "'");
-            core.getFileFromS3(message); //TODO: Tror inte jag har permission från KG's bucket att hämta filer.
+            core.getFileFromS3(message);
         };
         try {
             core.channel.basicConsume(ENCODING_REQUEST_QUEUE, true, deliverCallback, consumerTag -> { });
