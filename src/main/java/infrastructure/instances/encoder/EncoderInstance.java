@@ -24,28 +24,29 @@ public class EncoderInstance extends RunInstancesRequest {
     public EncoderInstance(String encoderInstanceProfileARN) {
         Tag infrastructureTypeTag = new Tag();
         infrastructureTypeTag.setKey("infrastructure-type");
-        infrastructureTypeTag.setValue("manager " + System.currentTimeMillis());
+        infrastructureTypeTag.setValue("encoder " + System.currentTimeMillis());
         TagSpecification tagSpecification = new TagSpecification();
         tagSpecification.setResourceType(ResourceType.Instance);
         tagSpecification.setTags(Arrays.asList(infrastructureTypeTag));
 
-        IamInstanceProfileSpecification managerIAM = new IamInstanceProfileSpecification();
-        managerIAM.setArn(encoderInstanceProfileARN);
+        IamInstanceProfileSpecification encoderIAM = new IamInstanceProfileSpecification();
+        encoderIAM.setArn(encoderInstanceProfileARN);
 
         withImageId("ami-0bdf93799014acdc4");
-        withKeyName("my-key-pair"); //KGs key, remove later
+        withKeyName("my-key-pair-eu"); //KGs key, remove later
         withInstanceType(InstanceType.T2Micro);
         withTagSpecifications(tagSpecification);
-        withIamInstanceProfile(managerIAM);
-        withUserData(Base64.getEncoder().encodeToString(new Scanner(ManagerInstance.class.getResourceAsStream("/encoder-instance.yml"), "UTF-8").useDelimiter("\\A").next().getBytes()));
+        withIamInstanceProfile(encoderIAM);
+        withUserData(Base64.getEncoder().encodeToString(new Scanner(EncoderInstance.class.getResourceAsStream("/encoder-instance.yml"), "UTF-8").useDelimiter("\\A").next().getBytes()));
         withMinCount(1);
         withMaxCount(1);
+//        withSecurityGroups()
     }
 
     public static String createEncoderRole(AmazonIdentityManagement aim) {
         System.out.println("===Trying to create manager instance profile===");
         List<String> policyARNs = Arrays.asList(
-                "arn:aws:iam::013636191514:role/encoder-role-v1 ");
+                "arn:aws:iam::aws:policy/AmazonS3FullAccess");
         InstanceProfile ip = InstanceProfileCreator.create(aim, "encoder-role-v1", "encoder-iam-instance-profile-v1", policyARNs);
 
         String arn = ip.getArn();
@@ -62,10 +63,10 @@ public class EncoderInstance extends RunInstancesRequest {
         try{
             createEncoderRole(aim);
         } catch (Exception e) {
-            EncoderCore.log(e.getMessage());
+            System.out.println(e.getMessage());
         }
 
-        EncoderCore.log("I failed here 1");
+        System.out.println("I failed here 1");
 
         try {
             Thread.sleep(2000);
@@ -73,32 +74,29 @@ public class EncoderInstance extends RunInstancesRequest {
             e.printStackTrace();
         }
 
-        EncoderCore.log("I failed here 2");
+        System.out.println("I failed here 2");
 
         try {
-            EncoderCore.log("I failed here 3");
             GetInstanceProfileRequest gipr = new GetInstanceProfileRequest();
-            EncoderCore.log("I failed here 4");
-            gipr.setInstanceProfileName("manager-iam-instance-profile-v1");
-            EncoderCore.log("I failed here 5");
+            gipr.setInstanceProfileName("encoder-iam-instance-profile-v1");
             String arn = aim.getInstanceProfile(gipr).getInstanceProfile().getArn();
-            EncoderCore.log("I failed here 6");
 
             AmazonEC2 ec2Client = AmazonEC2ClientBuilder.standard()
                     .withRegion(Regions.EU_CENTRAL_1)
                     .withCredentials(cp)
                     .build();
 
-            EncoderCore.log("I failed here 7 " + arn);
+            System.out.println("I failed here 7");
 
             RunInstancesResult result = ec2Client.runInstances(new EncoderInstance(arn));
-            EncoderCore.log("I failed here 8");
+
+            System.out.println("I failed here 8");
 
             System.out.println(result.getReservation().getReservationId());
         } catch (Exception e) {
-            EncoderCore.log(e.getMessage());
+            System.out.println(e.getMessage());
         }
 
-        EncoderCore.log("I failed here end");
+        System.out.println("I failed here end");
     }
 }

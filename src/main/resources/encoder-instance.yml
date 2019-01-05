@@ -27,4 +27,5 @@ runcmd:
 - cd /home/ubuntu
 - wget https://github.com/pixelguy95/encoder-cloud/archive/master.zip
 - unzip master.zip
-- cd encoder-cloud-master/movies/
+- cd encoder-cloud-master
+- sudo /opt/gradle/gradle-5.0/bin/gradle encoderJar

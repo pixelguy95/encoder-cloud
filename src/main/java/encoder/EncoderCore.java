@@ -44,7 +44,6 @@ public class EncoderCore {
 
     private AmazonS3Client amazonS3Client;
     private AmazonEC2Client amazonEC2Client;
-    public static QueueChannelWrapper qcw;
 
     public static String ENCODING_REQUEST_QUEUE = "encoding-request-queue";
     private String bucket_name = "nico-encoder-bucket";
@@ -166,59 +165,40 @@ public class EncoderCore {
         System.out.println("Encoder instance launched with configuration: " + result);
     }
 
-    public static void log(String message) {
-        try {
-            String identity = "[unknown]";
-            try{
-                identity = "[" + EC2MetadataUtils.getInstanceId() + "]";
-            } catch (Exception e) {
-
-            }
-
-            message = identity + " " + message;
-            qcw.channel.basicPublish("", QueueChannelWrapper.BASIC_LOG_QUEUE, null, message.getBytes());
-        } catch (IOException e) {
-        }
-    }
 
     private void startReplica() {
         try {
+
             AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
             EncoderInstance.start(cp);
         } catch (Exception e) {
-            log(e.getMessage());
+            System.out.println(e.getMessage());
         }
-    }
-
-    public static void createQueueWrapper() throws IOException, TimeoutException {
-        qcw = new QueueChannelWrapper();
     }
 
 
     public static void main(String[] args) throws IOException, TimeoutException {
 
-
         EncoderCore core = new EncoderCore();
-        createQueueWrapper();
-        core.startReplica();
+//        core.startReplica();
 
-//        core.initRabbitMQConnection();
-//
-//        for (S3ObjectSummary list : core.listFilesS3()) {
-//
-//            System.out.println(list);
-//        }
-//
-//        DeliverCallback deliverCallback = (consumerTag, delivery) -> {
-//            String message = new String(delivery.getBody(), "UTF-8");
-//            System.out.println(" [x] Received '" + message + "'");
-//            core.getFileFromS3(message);
-//        };
-//        try {
-//            core.channel.basicConsume(ENCODING_REQUEST_QUEUE, true, deliverCallback, consumerTag -> {
-//            });
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        core.initRabbitMQConnection();
+
+        for (S3ObjectSummary list : core.listFilesS3()) {
+
+            System.out.println(list);
+        }
+
+        DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+            String message = new String(delivery.getBody(), "UTF-8");
+            System.out.println(" [x] Received '" + message + "'");
+            core.getFileFromS3(message);
+        };
+        try {
+            core.channel.basicConsume(ENCODING_REQUEST_QUEUE, true, deliverCallback, consumerTag -> {
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
