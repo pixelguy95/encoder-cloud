@@ -43,14 +43,12 @@ public class EncoderCore {
     private AmazonEC2Client amazonEC2Client;
 
     public static String ENCODING_REQUEST_QUEUE = "encoding-request-queue";
-    private String bucket_name = "kgencoderbucket";
+    private String bucket_name = "nico-encoder-bucket";
 
     public EncoderCore() {
 
         amazonS3Client = new AmazonS3Client(getAwsCredentials());
         amazonEC2Client = new AmazonEC2Client(getAwsCredentials());
-
-
     }
 
 
@@ -66,7 +64,6 @@ public class EncoderCore {
     }
 
     private void uploadConvertedFileToS3(String fileName, String path) {
-
 
         if (!amazonS3Client.doesObjectExist(bucket_name, fileName)) {
             System.out.println("Uploading...");
@@ -85,7 +82,7 @@ public class EncoderCore {
         System.out.println("Saving file to: " + "movies/unconverted");
 
         //This is where the downloaded file will be saved
-        File localFile = new File(".".concat(keyName));
+        File localFile = new File("movies/unconverted/" + keyName);
         amazonS3Client.getObject(new GetObjectRequest(bucket_name, keyName), localFile);
 
         if (localFile.exists() && localFile.canRead()) {
@@ -93,8 +90,9 @@ public class EncoderCore {
             System.out.println("File successfully downloaded: " + localFile.getAbsolutePath());
             System.out.println("Converting file...");
 
+            File convertedFile = changeExtension(localFile, ".avi");
 
-            ProcessBuilder pb = new ProcessBuilder("mencoder", localFile.getAbsolutePath(), "mp3lame", "-ovc", "lavc", "-o", localFile.getName().concat("converted").concat(".avi"));
+            ProcessBuilder pb = new ProcessBuilder("mencoder", localFile.getAbsolutePath(), "mp3lame", "-ovc", "lavc", "-o", convertedFile.getName());
             Process p = pb.start();
             try {
                 p.waitFor();
@@ -102,22 +100,18 @@ public class EncoderCore {
                 e.printStackTrace();
             }
             if (p.exitValue() == 0) {
-                uploadConvertedFileToS3(keyName.concat(".mp4"), "movies/converted/");
+
+                uploadConvertedFileToS3(convertedFile.getName(), "movies/converted/");
             }
         }
     }
 
 
-    private void displayTextInputStream(InputStream input) throws IOException {
-        // Read the text input stream one line at a time and display each line.
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-        String line = null;
-        while ((line = reader.readLine()) != null) {
-            System.out.println(line);
-        }
-        System.out.println();
+    public static File changeExtension(File f, String newExtension) {
+        int i = f.getName().lastIndexOf('.');
+        String name = f.getName().substring(0,i);
+        return new File(f.getParent() + "/" + name + newExtension);
     }
-
 
     public void initRabbitMQConnection() {
 
@@ -161,7 +155,7 @@ public class EncoderCore {
 
 
         EncoderCore core = new EncoderCore();
-//        core.createEncoderInstance();
+        //core.createEncoderInstance();
 
         core.initRabbitMQConnection();
 
