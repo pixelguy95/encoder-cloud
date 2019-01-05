@@ -47,7 +47,7 @@ public class EncoderCore {
     private AmazonEC2Client amazonEC2Client;
 
     public static String ENCODING_REQUEST_QUEUE = "encoding-request-queue";
-    private String bucket_name = "nico-encoder-bucket";
+    private String bucket_name = "nico-encoder-bucket-frankfurt";
 
     public EncoderCore() {
 
