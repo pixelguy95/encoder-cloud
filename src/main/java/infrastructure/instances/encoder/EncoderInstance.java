@@ -45,7 +45,7 @@ public class EncoderInstance extends RunInstancesRequest {
     public static String createEncoderRole(AmazonIdentityManagement aim) {
         System.out.println("===Trying to create manager instance profile===");
         List<String> policyARNs = Arrays.asList(
-                "arn:aws:iam::aws:policy/AmazonS3FullAccess");
+                "arn:aws:iam::013636191514:role/encoder-role-v1 ");
         InstanceProfile ip = InstanceProfileCreator.create(aim, "encoder-role-v1", "encoder-iam-instance-profile-v1", policyARNs);
 
         String arn = ip.getArn();
@@ -91,7 +91,7 @@ public class EncoderInstance extends RunInstancesRequest {
 
             EncoderCore.log("I failed here 7 " + arn);
 
-            RunInstancesResult result = ec2Client.runInstances(new ManagerInstance(arn));
+            RunInstancesResult result = ec2Client.runInstances(new EncoderInstance(arn));
             EncoderCore.log("I failed here 8");
 
             System.out.println(result.getReservation().getReservationId());
