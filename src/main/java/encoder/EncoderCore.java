@@ -5,6 +5,7 @@ import client.Message;
 import client.prototypes.QueueChannelWrapper;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
@@ -22,8 +23,10 @@ import com.amazonaws.services.s3.transfer.Download;
 import com.amazonaws.services.s3.transfer.Transfer;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferProgress;
+import com.amazonaws.util.EC2MetadataUtils;
 import com.google.gson.Gson;
 import com.rabbitmq.client.*;
+import infrastructure.instances.encoder.EncoderInstance;
 import infrastructure.instances.manager.ManagerInstance;
 
 import java.io.*;
@@ -41,6 +44,7 @@ public class EncoderCore {
 
     private AmazonS3Client amazonS3Client;
     private AmazonEC2Client amazonEC2Client;
+    public static QueueChannelWrapper qcw;
 
     public static String ENCODING_REQUEST_QUEUE = "encoding-request-queue";
     private String bucket_name = "nico-encoder-bucket";
@@ -162,6 +166,16 @@ public class EncoderCore {
         System.out.println("Encoder instance launched with configuration: " + result);
     }
 
+    private void startReplica() {
+        try {
+            AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
+            EncoderInstance.start(cp);
+        } catch (Exception e) {
+            EncoderCore.log(e.getMessage());
+        }
+
+    }
+
 
     public static void main(String[] args) {
 
@@ -169,6 +183,7 @@ public class EncoderCore {
         EncoderCore core = new EncoderCore();
 //        core.createEncoderInstance();
 
+        core.startReplica();
 
         core.initRabbitMQConnection();
 
@@ -187,6 +202,22 @@ public class EncoderCore {
             });
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static void log(String message) {
+        try {
+
+            String identity = "[unknown]";
+            try{
+                identity = "[" + EC2MetadataUtils.getInstanceId() + "]";
+            } catch (Exception e) {
+
+            }
+
+            message = identity + " " + message;
+            qcw.channel.basicPublish("", QueueChannelWrapper.BASIC_LOG_QUEUE, null, message.getBytes());
+        } catch (IOException e) {
         }
     }
 }
