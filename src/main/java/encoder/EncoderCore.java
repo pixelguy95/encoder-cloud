@@ -166,14 +166,28 @@ public class EncoderCore {
         System.out.println("Encoder instance launched with configuration: " + result);
     }
 
+    public static void log(String message) {
+        try {
+            String identity = "[unknown]";
+            try{
+                identity = "[" + EC2MetadataUtils.getInstanceId() + "]";
+            } catch (Exception e) {
+
+            }
+
+            message = identity + " " + message;
+            qcw.channel.basicPublish("", QueueChannelWrapper.BASIC_LOG_QUEUE, null, message.getBytes());
+        } catch (IOException e) {
+        }
+    }
+
     private void startReplica() {
         try {
             AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
             EncoderInstance.start(cp);
         } catch (Exception e) {
-            EncoderCore.log(e.getMessage());
+            log(e.getMessage());
         }
-
     }
 
 
@@ -181,9 +195,7 @@ public class EncoderCore {
 
 
         EncoderCore core = new EncoderCore();
-//        core.createEncoderInstance();
-
-        core.startReplica();
+//        core.startReplica();
 
         core.initRabbitMQConnection();
 
@@ -202,22 +214,6 @@ public class EncoderCore {
             });
         } catch (IOException e) {
             e.printStackTrace();
-        }
-    }
-
-    public static void log(String message) {
-        try {
-
-            String identity = "[unknown]";
-            try{
-                identity = "[" + EC2MetadataUtils.getInstanceId() + "]";
-            } catch (Exception e) {
-
-            }
-
-            message = identity + " " + message;
-            qcw.channel.basicPublish("", QueueChannelWrapper.BASIC_LOG_QUEUE, null, message.getBytes());
-        } catch (IOException e) {
         }
     }
 }

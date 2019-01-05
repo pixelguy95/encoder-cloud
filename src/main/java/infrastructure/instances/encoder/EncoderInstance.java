@@ -42,7 +42,7 @@ public class EncoderInstance extends RunInstancesRequest {
         withMaxCount(1);
     }
 
-    public static String createManagerRole(AmazonIdentityManagement aim) {
+    public static String createEncoderRole(AmazonIdentityManagement aim) {
         System.out.println("===Trying to create manager instance profile===");
         List<String> policyARNs = Arrays.asList(
                 "arn:aws:iam::aws:policy/AmazonS3FullAccess");
@@ -60,7 +60,7 @@ public class EncoderInstance extends RunInstancesRequest {
                 .build();
 
         try{
-            createManagerRole(aim);
+            createEncoderRole(aim);
         } catch (Exception e) {
             EncoderCore.log(e.getMessage());
         }
