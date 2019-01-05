@@ -91,7 +91,19 @@ public class EncoderCore {
 
             File convertedFile = changeExtension(localFile, ".avi");
 
-            ProcessBuilder pb = new ProcessBuilder("mencoder", localFile.getAbsolutePath(), "mp3lame", "-ovc", "lavc", "-o", convertedFile.getName());
+            ProcessBuilder pb = new ProcessBuilder("sudo",
+                    "mencoder",
+                    localFile.getAbsolutePath(),
+                    "-o", convertedFile.getName(),
+                    "-oac",
+                    "mp3lame",
+                    "-ovc",
+                    "lavc",
+                    "-lavcopts",
+                    "vcodec=mpeg1video",
+                    "-of",
+                    "avi");
+
             System.out.println("Running command: \n\t" + pb.command().toString());
             Process p = pb.start();
             try {
