@@ -16,6 +16,7 @@ import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder;
 import com.amazonaws.services.identitymanagement.model.ListAccessKeysRequest;
 import com.amazonaws.services.identitymanagement.model.ListAccessKeysResult;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
@@ -42,7 +43,7 @@ public class EncoderCore {
     private Channel channel;
     private Connection connection;
 
-    private AmazonS3Client amazonS3Client;
+    private AmazonS3 amazonS3Client;
     private AmazonEC2Client amazonEC2Client;
 
     public static String ENCODING_REQUEST_QUEUE = "encoding-request-queue";
@@ -50,8 +51,8 @@ public class EncoderCore {
 
     public EncoderCore() {
 
-        amazonS3Client = new AmazonS3Client(getAwsCredentials());
-        amazonEC2Client = new AmazonEC2Client(getAwsCredentials());
+        amazonS3Client = AmazonS3ClientBuilder.standard().withCredentials(CredentialsFetch.getCredentialsProvider()).withRegion(Regions.EU_CENTRAL_1).build();
+//        amazonEC2Client = new AmazonEC2Client(getAwsCredentials());
     }
 
 
