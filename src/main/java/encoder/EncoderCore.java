@@ -88,20 +88,20 @@ public class EncoderCore {
         if (localFile.exists() && localFile.canRead()) {
 
             System.out.println("File successfully downloaded: " + localFile.getAbsolutePath());
-            System.out.println("Converting file...");
 
             File convertedFile = changeExtension(localFile, ".avi");
 
             ProcessBuilder pb = new ProcessBuilder("mencoder", localFile.getAbsolutePath(), "mp3lame", "-ovc", "lavc", "-o", convertedFile.getName());
+            System.out.println("Running command: \n\t" + pb.command().toString());
             Process p = pb.start();
             try {
+                System.out.println("Converting file...");
                 p.waitFor();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
             if (p.exitValue() == 0) {
-
-                uploadConvertedFileToS3(convertedFile.getName(), "movies/converted/");
+                uploadConvertedFileToS3(convertedFile.getName(), convertedFile.getAbsolutePath());
             }
         }
     }
@@ -155,7 +155,8 @@ public class EncoderCore {
 
 
         EncoderCore core = new EncoderCore();
-        //core.createEncoderInstance();
+//        core.createEncoderInstance();
+
 
         core.initRabbitMQConnection();
 
