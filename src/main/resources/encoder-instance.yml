@@ -29,3 +29,6 @@ runcmd:
 - unzip master.zip
 - cd encoder-cloud-master
 - sudo /opt/gradle/gradle-5.0/bin/gradle encoderJar
+- cd build/libs
+- sudo java -jar encoder-cloud-encoder-0.0.1.jar #fix this later with tmux
+
