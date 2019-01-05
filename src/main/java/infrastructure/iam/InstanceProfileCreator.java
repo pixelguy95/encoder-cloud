@@ -18,6 +18,8 @@ public class InstanceProfileCreator {
             crr.setRoleName(roleName);
             crr.setDescription("This is empty right now");
 
+            Thread.sleep(1000);
+
             String s = new Scanner(ManagerInstance.class.getResourceAsStream("/instance-assume-role-document.json"), "UTF-8").useDelimiter("\\A").next();
             crr.setAssumeRolePolicyDocument(s);
             aim.createRole(crr);
@@ -29,24 +31,8 @@ public class InstanceProfileCreator {
                 aim.attachRolePolicy(arpr);
             }
 
-            Thread.sleep(5000);
+            Thread.sleep(1000);
 
-            DeleteInstanceProfileRequest dipr = new DeleteInstanceProfileRequest();
-            dipr.setInstanceProfileName(instanceProfileName);
-            aim.deleteInstanceProfile(dipr);
-
-            Thread.sleep(5000);
-            CreateInstanceProfileRequest cipr = new CreateInstanceProfileRequest();
-            cipr.setInstanceProfileName(instanceProfileName);
-            aim.createInstanceProfile(cipr);
-
-            Thread.sleep(5000);
-            AddRoleToInstanceProfileRequest artipr = new AddRoleToInstanceProfileRequest();
-            artipr.setInstanceProfileName(instanceProfileName);
-            artipr.setRoleName(roleName);
-            aim.addRoleToInstanceProfile(artipr);
-
-            Thread.sleep(5000);
         } catch (EntityAlreadyExistsException e) {
             System.out.println(e.getMessage());
         } catch (Exception e) {
@@ -54,6 +40,30 @@ public class InstanceProfileCreator {
             System.out.println(e.getClass().getName());
             System.out.println(e.getMessage());
             System.exit(0);
+        }
+
+        try {
+
+            DeleteInstanceProfileRequest dipr = new DeleteInstanceProfileRequest();
+            dipr.setInstanceProfileName(instanceProfileName);
+            aim.deleteInstanceProfile(dipr);
+
+            Thread.sleep(5000);
+
+            CreateInstanceProfileRequest cipr = new CreateInstanceProfileRequest();
+            cipr.setInstanceProfileName(instanceProfileName);
+            aim.createInstanceProfile(cipr);
+
+            Thread.sleep(2000);
+
+            AddRoleToInstanceProfileRequest artipr = new AddRoleToInstanceProfileRequest();
+            artipr.setInstanceProfileName(instanceProfileName);
+            artipr.setRoleName(roleName);
+            aim.addRoleToInstanceProfile(artipr);
+
+            Thread.sleep(1000);
+        } catch (Exception e) {
+            System.out.println(e.getClass().getName() + " " + e.getMessage());
         }
 
         GetInstanceProfileRequest gipr = new GetInstanceProfileRequest();
