@@ -78,15 +78,14 @@ public class EncoderCore {
             }
             System.out.println("Done!");
         }
+
     }
 
 
     public void getFileFromS3(String keyName) throws IOException {
 
-        System.out.println("Saving file to: " + "movies/unconverted");
-
         //This is where the downloaded file will be saved
-        File localFile = new File("movies/unconverted/" + keyName);
+        File localFile = new File(keyName);
         amazonS3Client.getObject(new GetObjectRequest(bucket_name, keyName), localFile);
 
         if (localFile.exists() && localFile.canRead()) {
