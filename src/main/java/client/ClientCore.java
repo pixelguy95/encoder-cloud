@@ -32,12 +32,12 @@ public class ClientCore {
         s3 = AmazonS3ClientBuilder.standard().withCredentials(CredentialsFetch.getCredentialsProvider()).
                 withRegion(Regions.EU_CENTRAL_1).build();
 
-        channelWrapper = new QueueChannelWrapper();
-        upload(bucketName, queueURL, new File(filePath));
+        channelWrapper = new QueueChannelWrapper(queueURL);
+        upload(bucketName, new File(filePath));
         sendMessage(new File(filePath), channelWrapper.channel);
     }
 
-    private void upload(String bucketName, String queueURL, File file) {
+    private void upload(String bucketName, File file) {
 
         TransferManager tm = TransferManagerBuilder.standard()
                 .withS3Client(s3)
@@ -63,6 +63,7 @@ public class ClientCore {
 
     private void sendMessage(File file, Channel channel) throws IOException {
         channel.basicPublish("", QueueChannelWrapper.ENCODING_REQUEST_QUEUE, null, file.getName().getBytes());
+        System.out.println("was ist das: " + file.getName().getBytes());
     }
 
 
