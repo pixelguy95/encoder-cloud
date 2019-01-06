@@ -47,12 +47,12 @@ public class EncoderCore {
     public void convertAndUpload(String fileKeyName) throws IOException {
 
         File localFile = new File(fileKeyName);
-        File convertedFile = changeExtension(localFile, ".avi"); // all files are converted to .avi atm
         amazonS3Client.getObject(new GetObjectRequest(bucket_name, fileKeyName), localFile); //download unconverted file
 
         if (localFile.exists() && localFile.canRead()) {
 
             System.out.println("File successfully downloaded: " + localFile.getAbsolutePath());
+            File convertedFile = changeExtension(localFile, ".avi"); // all files are converted to .avi atm
 
             ProcessBuilder pb = new ProcessBuilder("sudo",
                     "mencoder",
@@ -183,3 +183,4 @@ public class EncoderCore {
         });
     }
 }
+
