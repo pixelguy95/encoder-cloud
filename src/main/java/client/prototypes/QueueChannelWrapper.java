@@ -18,7 +18,7 @@ public class QueueChannelWrapper {
 
     public QueueChannelWrapper() throws IOException, TimeoutException {
         ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost("queue.ndersson.io");
+        connectionFactory.setHost("rabbitmq-cluster-loadbalancer-449114661.eu-central-1.elb.amazonaws.com");
         connectionFactory.setUsername("admin");
         connectionFactory.setPassword("kebabpizza");
         connection = connectionFactory.newConnection();

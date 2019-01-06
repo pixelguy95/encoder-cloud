@@ -2,6 +2,7 @@ package infrastructure;
 
 import aws.CredentialsFetch;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import infrastructure.cluster.RabbitMQClusterInfrastructure;
 import infrastructure.instances.manager.ManagerInstance;
 import manager.ManagerCore;
 
@@ -13,8 +14,10 @@ public class InfrastructureCore {
     public static AWSCredentialsProvider cp;
 
     public static void main(String args[]) throws IOException, TimeoutException {
-        ManagerCore.createQueueWrapper();
+
         cp = CredentialsFetch.getCredentialsProvider();
+
+        RabbitMQClusterInfrastructure.create(cp);
         ManagerInstance.start(cp);
     }
 

@@ -34,7 +34,6 @@ public class EncoderCore {
     private String bucket_name = "nico-encoder-bucket-frankfurt"; //TODO: FIX SO BUCKETS ARE CREATED DYNAMICALLY?
 
     public EncoderCore() {
-
         amazonS3Client = AmazonS3ClientBuilder.standard().withCredentials(CredentialsFetch.getCredentialsProvider()).withRegion(Regions.EU_CENTRAL_1).build();
     }
 
