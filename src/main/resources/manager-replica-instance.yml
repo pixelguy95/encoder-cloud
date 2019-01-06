@@ -30,4 +30,4 @@ runcmd:
 - unzip master.zip
 - cd encoder-cloud-master
 - sudo /opt/gradle/gradle-5.0/bin/gradle managerJar
-- tmux new-session -d -s encoder_session 'java -jar build/libs/encoder-cloud-manager*.jar'
+- tmux new-session -d -s encoder_session 'java -jar build/libs/encoder-cloud-manager*.jar %QUEUEURL%'

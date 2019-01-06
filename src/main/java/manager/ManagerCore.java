@@ -23,10 +23,12 @@ public class ManagerCore implements Runnable {
     private AmazonEC2 ec2Client;
 
     private QueueChannelWrapper queueWrapper;
+    private String queueURL;
 
-    public ManagerCore() throws InterruptedException, IOException, TimeoutException {
+    public ManagerCore(String queueURL) throws InterruptedException, IOException, TimeoutException {
 
-        queueWrapper = new QueueChannelWrapper("a"); //TODO: FIX
+        this.queueURL = queueURL;
+        queueWrapper = new QueueChannelWrapper(queueURL);
         AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
 
         ec2Client = AmazonEC2ClientBuilder.standard()
@@ -56,7 +58,7 @@ public class ManagerCore implements Runnable {
     private void startReplica() {
         try {
             AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
-            ManagerInstance.start(cp);
+            ManagerInstance.start(cp, queueURL);
         } catch (Exception e) {
             ManagerCore.log(e.getMessage());
         }
@@ -107,15 +109,9 @@ public class ManagerCore implements Runnable {
     }
 
     public static void main(String args[]) throws IOException, TimeoutException, InterruptedException {
-
-        createQueueWrapper();
         log("MANAGER STARTING");
 
-        new ManagerCore();
-    }
-
-    public static void createQueueWrapper() throws IOException, TimeoutException {
-        qcw = new QueueChannelWrapper("a"); //TODO: FIX
+        new ManagerCore(args[0]);
     }
 
     /**
