@@ -22,13 +22,12 @@ public class ManagerCore implements Runnable {
     private boolean replica;
     private AmazonEC2 ec2Client;
 
-    private QueueChannelWrapper queueWrapper;
     private String queueURL;
 
     public ManagerCore(String queueURL) throws InterruptedException, IOException, TimeoutException {
 
         this.queueURL = queueURL;
-        queueWrapper = new QueueChannelWrapper(queueURL);
+        qcw = new QueueChannelWrapper(queueURL);
         log("MANAGER STARTING");
 
         AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
@@ -96,7 +95,7 @@ public class ManagerCore implements Runnable {
 
             AMQP.Queue.DeclareOk ok = null;
             try {
-                ok = queueWrapper.channel.queueDeclare(QueueChannelWrapper.ENCODING_REQUEST_QUEUE, true, false, false, null);
+                ok = qcw.channel.queueDeclare(QueueChannelWrapper.ENCODING_REQUEST_QUEUE, true, false, false, null);
                 double queueSize = ok.getMessageCount();
                 double consumerSize = ok.getConsumerCount();
 
