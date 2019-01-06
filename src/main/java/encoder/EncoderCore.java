@@ -174,6 +174,7 @@ public class EncoderCore {
         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
             try {
 
+
                 String message = new String(delivery.getBody(), "UTF-8");
                 System.out.println(" [x] Received '" + message + "'");
                 core.convertAndUpload(message);
