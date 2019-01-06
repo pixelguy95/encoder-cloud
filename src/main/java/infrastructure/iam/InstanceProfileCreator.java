@@ -28,12 +28,30 @@ public class InstanceProfileCreator {
                 arpr.setPolicyArn(policyARN);
                 aim.attachRolePolicy(arpr);
             }
+        } catch (EntityAlreadyExistsException e) {
+            System.out.println(e.getMessage());
+        } catch (Exception e) {
+            System.out.println("Error");
+            System.out.println(e.getClass().getName());
+            System.out.println(e.getMessage());
+            System.exit(0);
+        }
 
+        try {
             Thread.sleep(5000);
 
-            DeleteInstanceProfileRequest dipr = new DeleteInstanceProfileRequest();
-            dipr.setInstanceProfileName(instanceProfileName);
-            aim.deleteInstanceProfile(dipr);
+            try {
+                RemoveRoleFromInstanceProfileRequest rrfipr = new RemoveRoleFromInstanceProfileRequest();
+                rrfipr.setInstanceProfileName(instanceProfileName);
+                rrfipr.setRoleName(roleName);
+                aim.removeRoleFromInstanceProfile(rrfipr);
+
+                DeleteInstanceProfileRequest dipr = new DeleteInstanceProfileRequest();
+                dipr.setInstanceProfileName(instanceProfileName);
+                aim.deleteInstanceProfile(dipr);
+            } catch (NoSuchEntityException e) {
+
+            }
 
             Thread.sleep(5000);
             CreateInstanceProfileRequest cipr = new CreateInstanceProfileRequest();
@@ -45,15 +63,10 @@ public class InstanceProfileCreator {
             artipr.setInstanceProfileName(instanceProfileName);
             artipr.setRoleName(roleName);
             aim.addRoleToInstanceProfile(artipr);
-
             Thread.sleep(5000);
-        } catch (EntityAlreadyExistsException e) {
-            System.out.println(e.getMessage());
+
         } catch (Exception e) {
-            System.out.println("Error");
-            System.out.println(e.getClass().getName());
-            System.out.println(e.getMessage());
-            System.exit(0);
+            e.printStackTrace();
         }
 
         GetInstanceProfileRequest gipr = new GetInstanceProfileRequest();

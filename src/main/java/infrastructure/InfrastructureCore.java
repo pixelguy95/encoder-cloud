@@ -3,6 +3,7 @@ package infrastructure;
 import aws.CredentialsFetch;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import infrastructure.cluster.RabbitMQClusterInfrastructure;
+import infrastructure.instances.encoder.EncoderInstance;
 import infrastructure.instances.manager.ManagerInstance;
 import manager.ManagerCore;
 
@@ -13,13 +14,14 @@ public class InfrastructureCore {
 
     public static AWSCredentialsProvider cp;
 
-    public static void main(String args[]) throws IOException, TimeoutException {
+    public static void main(String args[]) {
 
         cp = CredentialsFetch.getCredentialsProvider();
 
-        S3BucketSetup.create(cp);
-        RabbitMQClusterInfrastructure.create(cp);
+        String bucketName = S3BucketSetup.create(cp);
+        String queueURL = RabbitMQClusterInfrastructure.create(cp);
         ManagerInstance.start(cp);
+        EncoderInstance.start(cp, bucketName, queueURL);
     }
 
 }

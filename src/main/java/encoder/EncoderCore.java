@@ -20,20 +20,19 @@ import java.util.concurrent.TimeoutException;
 public class EncoderCore {
 
     private QueueChannelWrapper queueChannelWrapper;
-    private String bucketName = "temporary-encoder-bucket-to-be-deleted";
 
     public EncoderCore(String bucketName, String url) throws IOException, TimeoutException {
-        queueChannelWrapper = new QueueChannelWrapper("rabbitmq-cluster-loadbalancer-449114661.eu-central-1.elb.amazonaws.com");
+        queueChannelWrapper = new QueueChannelWrapper(url);
         queueChannelWrapper.channel.basicQos(1); // accept only one unack-ed message at a time
 
-        EncoderConsumer consumer = new EncoderConsumer(queueChannelWrapper, this.bucketName);
+        EncoderConsumer consumer = new EncoderConsumer(queueChannelWrapper, bucketName);
 
         queueChannelWrapper.channel.basicConsume(QueueChannelWrapper.ENCODING_REQUEST_QUEUE, false, consumer, consumerTag -> {
         });
     }
 
     public static void main(String[] args) throws IOException, TimeoutException {
-        new EncoderCore("hej", "då"); //TODO: set arguments here
+        new EncoderCore(args[0], args[1]);
     }
 }
 
