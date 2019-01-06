@@ -29,6 +29,8 @@ public class ManagerCore implements Runnable {
 
         this.queueURL = queueURL;
         queueWrapper = new QueueChannelWrapper(queueURL);
+        log("MANAGER STARTING");
+
         AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
 
         ec2Client = AmazonEC2ClientBuilder.standard()
@@ -109,7 +111,7 @@ public class ManagerCore implements Runnable {
     }
 
     public static void main(String args[]) throws IOException, TimeoutException, InterruptedException {
-        log("MANAGER STARTING");
+
 
         new ManagerCore(args[0]);
     }
