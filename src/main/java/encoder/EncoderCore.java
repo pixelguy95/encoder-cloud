@@ -37,11 +37,6 @@ public class EncoderCore {
         amazonS3Client = AmazonS3ClientBuilder.standard().withCredentials(CredentialsFetch.getCredentialsProvider()).withRegion(Regions.EU_CENTRAL_1).build();
     }
 
-    public BasicAWSCredentials getAwsCredentials() {
-        return new BasicAWSCredentials(CredentialsFetch.getCredentialsProvider().getCredentials().getAWSAccessKeyId(),
-                CredentialsFetch.getCredentialsProvider().getCredentials().getAWSSecretKey());
-    }
-
     public List<S3ObjectSummary> listFilesS3() {
 
         ListObjectsV2Result result = amazonS3Client.listObjectsV2(bucket_name);
@@ -163,6 +158,7 @@ public class EncoderCore {
     public static void main(String[] args) throws IOException, TimeoutException {
 
         EncoderCore core = new EncoderCore();
+//        core.startEncoderInstance();
         core.initRabbitMQConnection();
 
         for (S3ObjectSummary list : core.listFilesS3()) {
@@ -173,13 +169,11 @@ public class EncoderCore {
 
         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
             try {
-
-
                 String message = new String(delivery.getBody(), "UTF-8");
                 System.out.println(" [x] Received '" + message + "'");
                 core.convertAndUpload(message);
             } finally {
-                System.out.println(" [x] Done");
+
                 core.channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
             }
         };
