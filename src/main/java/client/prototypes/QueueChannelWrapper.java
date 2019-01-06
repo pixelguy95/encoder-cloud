@@ -16,9 +16,9 @@ public class QueueChannelWrapper {
     public Channel channel;
     public Connection connection;
 
-    public QueueChannelWrapper() throws IOException, TimeoutException {
+    public QueueChannelWrapper(String url) throws IOException, TimeoutException {
         ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost("rabbitmq-cluster-loadbalancer-449114661.eu-central-1.elb.amazonaws.com");
+        connectionFactory.setHost(url);
         connectionFactory.setUsername("admin");
         connectionFactory.setPassword("kebabpizza");
         connection = connectionFactory.newConnection();

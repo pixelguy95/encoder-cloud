@@ -22,11 +22,14 @@ public class ManagerCore implements Runnable {
     private boolean replica;
     private AmazonEC2 ec2Client;
 
-    private QueueChannelWrapper queueWrapper;
+    private String queueURL;
 
-    public ManagerCore() throws InterruptedException, IOException, TimeoutException {
+    public ManagerCore(String queueURL) throws InterruptedException, IOException, TimeoutException {
 
-        queueWrapper = new QueueChannelWrapper();
+        this.queueURL = queueURL;
+        qcw = new QueueChannelWrapper(queueURL);
+        log("MANAGER STARTING");
+
         AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
 
         ec2Client = AmazonEC2ClientBuilder.standard()
@@ -56,7 +59,7 @@ public class ManagerCore implements Runnable {
     private void startReplica() {
         try {
             AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
-            ManagerInstance.start(cp);
+            ManagerInstance.start(cp, queueURL);
         } catch (Exception e) {
             ManagerCore.log(e.getMessage());
         }
@@ -92,11 +95,12 @@ public class ManagerCore implements Runnable {
 
             AMQP.Queue.DeclareOk ok = null;
             try {
-                ok = queueWrapper.channel.queueDeclare(QueueChannelWrapper.ENCODING_REQUEST_QUEUE, true, false, false, null);
+                ok = qcw.channel.queueDeclare(QueueChannelWrapper.ENCODING_REQUEST_QUEUE, true, false, false, null);
                 double queueSize = ok.getMessageCount();
                 double consumerSize = ok.getConsumerCount();
 
                 log("Encoding queue size: " + queueSize + ", Nr of encoders: " + consumerSize);
+
 
             } catch (IOException e) {
                 log(e.getMessage());
@@ -107,14 +111,8 @@ public class ManagerCore implements Runnable {
 
     public static void main(String args[]) throws IOException, TimeoutException, InterruptedException {
 
-        createQueueWrapper();
-        log("MANAGER STARTING");
 
-        new ManagerCore();
-    }
-
-    public static void createQueueWrapper() throws IOException, TimeoutException {
-        qcw = new QueueChannelWrapper();
+        new ManagerCore(args[0]);
     }
 
     /**

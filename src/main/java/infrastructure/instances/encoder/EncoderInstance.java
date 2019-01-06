@@ -12,6 +12,7 @@ import com.amazonaws.services.identitymanagement.model.InstanceProfile;
 import encoder.EncoderCore;
 import infrastructure.iam.InstanceProfileCreator;
 import infrastructure.instances.manager.ManagerInstance;
+import infrastructure.securitygroup.SecurityGroupCreator;
 import manager.ManagerCore;
 
 import java.util.Arrays;
@@ -21,7 +22,7 @@ import java.util.Scanner;
 
 public class EncoderInstance extends RunInstancesRequest {
 
-    public EncoderInstance(String encoderInstanceProfileARN) {
+    public EncoderInstance(String encoderInstanceProfileARN, SecurityGroup sg, String bucketName, String queueURL) {
         Tag infrastructureTypeTag = new Tag();
         infrastructureTypeTag.setKey("infrastructure-type");
         infrastructureTypeTag.setValue("encoder " + System.currentTimeMillis());
@@ -33,14 +34,17 @@ public class EncoderInstance extends RunInstancesRequest {
         encoderIAM.setArn(encoderInstanceProfileARN);
 
         withImageId("ami-0bdf93799014acdc4");
-        withKeyName("my-key-pair-eu"); //KGs key, remove later
+        withKeyName("school"); //KGs key, remove later
         withInstanceType(InstanceType.T2Micro);
         withTagSpecifications(tagSpecification);
         withIamInstanceProfile(encoderIAM);
-        withUserData(Base64.getEncoder().encodeToString(new Scanner(EncoderInstance.class.getResourceAsStream("/encoder-instance.yml"), "UTF-8").useDelimiter("\\A").next().getBytes()));
+        String launchConfigContents = new Scanner(EncoderInstance.class.getResourceAsStream("/encoder-instance.yml"), "UTF-8").useDelimiter("\\A").next();
+        launchConfigContents = launchConfigContents.replaceAll("%BUCKETNAME%", bucketName);
+        launchConfigContents = launchConfigContents.replaceAll("%QUEUEURL%", queueURL);
+        withUserData(Base64.getEncoder().encodeToString(launchConfigContents.getBytes()));
         withMinCount(1);
         withMaxCount(1);
-//        withSecurityGroups()
+        withSecurityGroupIds(sg.getGroupId());
     }
 
     public static String createEncoderRole(AmazonIdentityManagement aim) {
@@ -54,7 +58,7 @@ public class EncoderInstance extends RunInstancesRequest {
         return arn;
     }
 
-    public static void start(AWSCredentialsProvider cp) {
+    public static void start(AWSCredentialsProvider cp, String bucketName, String queueURL) {
         AmazonIdentityManagement aim = AmazonIdentityManagementAsyncClientBuilder.standard()
                 .withRegion(Regions.EU_CENTRAL_1)
                 .withCredentials(cp)
@@ -66,15 +70,11 @@ public class EncoderInstance extends RunInstancesRequest {
             System.out.println(e.getMessage());
         }
 
-        System.out.println("I failed here 1");
-
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
-        System.out.println("I failed here 2");
 
         try {
             GetInstanceProfileRequest gipr = new GetInstanceProfileRequest();
@@ -86,17 +86,13 @@ public class EncoderInstance extends RunInstancesRequest {
                     .withCredentials(cp)
                     .build();
 
-            System.out.println("I failed here 7");
+            SecurityGroup sg = SecurityGroupCreator.create(ec2Client, "encoder-security-group", Arrays.asList(new SecurityGroupCreator.PortRange(22, 22)));
 
-            RunInstancesResult result = ec2Client.runInstances(new EncoderInstance(arn));
-
-            System.out.println("I failed here 8");
+            RunInstancesResult result = ec2Client.runInstances(new EncoderInstance(arn, sg, bucketName, queueURL));
 
             System.out.println(result.getReservation().getReservationId());
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
-
-        System.out.println("I failed here end");
     }
 }

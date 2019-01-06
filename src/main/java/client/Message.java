@@ -4,6 +4,11 @@ public class Message {
 
     private String key;
     private String format;
+    private int size;
+
+    public Message() {
+
+    }
 
     public String getFormat() {
         return format;
@@ -19,12 +24,6 @@ public class Message {
 
     public void setSize(int size) {
         this.size = size;
-    }
-
-    private int size;
-
-    public Message() {
-
     }
 
     public String getKey() {
