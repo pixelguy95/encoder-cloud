@@ -1,13 +1,21 @@
 package encoder;
 
+
 import aws.CredentialsFetch;
-import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.event.ProgressEvent;
+import com.amazonaws.event.ProgressListener;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ListObjectsV2Result;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
+import com.amazonaws.services.s3.transfer.Upload;
 import com.rabbitmq.client.*;
 import infrastructure.instances.encoder.EncoderInstance;
 
@@ -44,15 +52,13 @@ public class EncoderCore {
 
     public void convertAndUpload(String fileKeyName) throws IOException {
 
-        //This is where the downloaded file will be saved
         File localFile = new File(fileKeyName);
-        amazonS3Client.getObject(new GetObjectRequest(bucket_name, fileKeyName), localFile);
+        File convertedFile = changeExtension(localFile, ".avi"); // all files are converted to .avi atm
+        amazonS3Client.getObject(new GetObjectRequest(bucket_name, fileKeyName), localFile); //download unconverted file
 
         if (localFile.exists() && localFile.canRead()) {
 
             System.out.println("File successfully downloaded: " + localFile.getAbsolutePath());
-
-            File convertedFile = changeExtension(localFile, ".avi");
 
             ProcessBuilder pb = new ProcessBuilder("sudo",
                     "mencoder",
@@ -76,36 +82,61 @@ public class EncoderCore {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            if (p.exitValue() == 0) {
-
-                if (!amazonS3Client.doesObjectExist(bucket_name, convertedFile.getName())) {
-                    System.out.println("Uploading...");
-                    try {
-                        amazonS3Client.putObject(bucket_name, convertedFile.getName(), new File(convertedFile.getPath()));
-                    } catch (AmazonServiceException e) {
-                        System.err.println(e.getErrorMessage());
-                    }
-                    System.out.println("Upload " + convertedFile.getName() + "successful.");
-                    localFile.delete();
-                    convertedFile.delete();
-                }
+            if (p.exitValue() == 0) { // if thread if successful/file is converted
+                uploadFileS3(convertedFile);
+                localFile.delete();
+                convertedFile.delete();
+            } else {
+                System.out.println("Something went wrong in thread: " + p.toString() + " when converting.");
             }
         }
     }
 
-    public static File changeExtension(File f, String newExtension) {
+    private void uploadFileS3(File file) {
+
+        TransferManager tm = TransferManagerBuilder.standard()
+                .withS3Client(amazonS3Client)
+                .build();
+
+        if (!amazonS3Client.doesObjectExist(bucket_name, file.getName())) {
+
+            PutObjectRequest request = new PutObjectRequest(bucket_name, file.getName(), new File(file.getPath()));
+
+            request.setGeneralProgressListener(progressEvent -> System.out.println("Transferred bytes: " + progressEvent.getBytesTransferred()));
+            Upload upload = tm.upload(request);
+
+            try {
+                upload.waitForCompletion();
+                System.out.println("Upload " + file.getName() + " successful.");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+//        if (!amazonS3Client.doesObjectExist(bucket_name, file.getName())) {
+//            try {
+//                amazonS3Client.putObject(bucket_name, file.getName(), new File(file.getPath()));
+//
+//            } catch (AmazonServiceException e) {
+//                System.err.println(e.getErrorMessage());
+//            }
+//            System.out.println("Upload " + file.getName() + " successful.");
+//        }
+    }
+
+    private static File changeExtension(File f, String newExtension) {
         int i = f.getName().lastIndexOf('.');
-        String name = f.getName().substring(0,i);
+        String name = f.getName().substring(0, i);
         Path currentRelativePath = Paths.get("");
         return new File(currentRelativePath.toAbsolutePath().toString() + "/" + name + newExtension);
     }
 
-    public void initRabbitMQConnection() {
+    private void initRabbitMQConnection() {
 
         try {
 
             ConnectionFactory connectionFactory = new ConnectionFactory();
-            connectionFactory.setHost("queue.ndersson.io");
+            connectionFactory.setHost("rabbitmq-cluster-loadbalancer-449114661.eu-central-1.elb.amazonaws.com");
             connectionFactory.setUsername("admin");
             connectionFactory.setPassword("kebabpizza");
             Connection connection = connectionFactory.newConnection();
@@ -118,7 +149,6 @@ public class EncoderCore {
             e.printStackTrace();
         }
     }
-
 
     private void startEncoderInstance() {
         try {
@@ -134,25 +164,28 @@ public class EncoderCore {
     public static void main(String[] args) throws IOException, TimeoutException {
 
         EncoderCore core = new EncoderCore();
-//        core.startEncoderInstance();
-
         core.initRabbitMQConnection();
 
         for (S3ObjectSummary list : core.listFilesS3()) {
-
             System.out.println(list);
         }
 
+        core.channel.basicQos(1); // accept only one unack-ed message at a time
+
         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
-            String message = new String(delivery.getBody(), "UTF-8");
-            System.out.println(" [x] Received '" + message + "'");
-            core.convertAndUpload(message);
+            try {
+
+                String message = new String(delivery.getBody(), "UTF-8");
+                System.out.println(" [x] Received '" + message + "'");
+                core.convertAndUpload(message);
+            } finally {
+                System.out.println(" [x] Done");
+                core.channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+            }
         };
-        try {
-            core.channel.basicConsume(ENCODING_REQUEST_QUEUE, true, deliverCallback, consumerTag -> {
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        /*auto ack is false, will ack when work is done i.e. file is converted and uploaded*/
+        /*TODO: Send message to client with link to converted/uploaded file*/
+        core.channel.basicConsume(ENCODING_REQUEST_QUEUE, false, deliverCallback, consumerTag -> {
+        });
     }
 }
