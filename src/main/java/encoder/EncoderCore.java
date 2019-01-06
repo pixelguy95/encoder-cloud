@@ -158,29 +158,30 @@ public class EncoderCore {
     public static void main(String[] args) throws IOException, TimeoutException {
 
         EncoderCore core = new EncoderCore();
-//        core.startEncoderInstance();
-        core.initRabbitMQConnection();
-
-        for (S3ObjectSummary list : core.listFilesS3()) {
-            System.out.println(list);
-        }
-
-        core.channel.basicQos(1); // accept only one unack-ed message at a time
-
-        DeliverCallback deliverCallback = (consumerTag, delivery) -> {
-            try {
-                String message = new String(delivery.getBody(), "UTF-8");
-                System.out.println(" [x] Received '" + message + "'");
-                core.convertAndUpload(message);
-            } finally {
-
-                core.channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
-            }
-        };
-        /*auto ack is false, will ack when work is done i.e. file is converted and uploaded*/
-        /*TODO: Send message to client with link to converted/uploaded file*/
-        core.channel.basicConsume(ENCODING_REQUEST_QUEUE, false, deliverCallback, consumerTag -> {
-        });
+        core.startEncoderInstance();
+//        core.initRabbitMQConnection();
+//
+//        for (S3ObjectSummary list : core.listFilesS3()) {
+//            System.out.println(list);
+//        }
+//
+//        core.channel.basicQos(1); // accept only one unack-ed message at a time
+//
+//        DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+//            try {
+//                String message = new String(delivery.getBody(), "UTF-8");
+//                System.out.println(" [x] Received '" + message + "'");
+//                core.convertAndUpload(message);
+//            } finally {
+//
+//                core.channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+//            }
+//        };
+//        /*auto ack is false, will ack when work is done i.e. file is converted and uploaded*/
+//        /*TODO: Send message to client with link to converted/uploaded file*/
+//        core.channel.basicConsume(ENCODING_REQUEST_QUEUE, false, deliverCallback, consumerTag -> {
+//        });
+//    }
     }
-}
 
+}
