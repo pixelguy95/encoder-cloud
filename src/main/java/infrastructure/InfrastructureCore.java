@@ -26,7 +26,7 @@ public class InfrastructureCore {
         waitForClusterToForm(queueURL);
         System.out.println("Cluster is formed");
 
-        ManagerInstance.start(cp, queueURL);
+        ManagerInstance.start(cp, bucketName, queueURL);
         EncoderInstance.start(cp, bucketName, queueURL);
     }
 

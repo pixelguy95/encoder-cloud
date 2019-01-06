@@ -22,6 +22,27 @@ import java.util.Scanner;
 
 public class EncoderInstance extends RunInstancesRequest {
 
+    public EncoderInstance(String imageID, String encoderInstanceProfileARN, SecurityGroup sg, String bucketName, String queueURL) {
+        Tag infrastructureTypeTag = new Tag();
+        infrastructureTypeTag.setKey("infrastructure-type");
+        infrastructureTypeTag.setValue("encoder " + System.currentTimeMillis());
+        TagSpecification tagSpecification = new TagSpecification();
+        tagSpecification.setResourceType(ResourceType.Instance);
+        tagSpecification.setTags(Arrays.asList(infrastructureTypeTag));
+
+        IamInstanceProfileSpecification encoderIAM = new IamInstanceProfileSpecification();
+        encoderIAM.setArn(encoderInstanceProfileARN);
+
+        withImageId(imageID);
+        withKeyName("school");
+        withInstanceType(InstanceType.T2Micro);
+        withTagSpecifications(tagSpecification);
+        withIamInstanceProfile(encoderIAM);
+        withMinCount(1);
+        withMaxCount(1);
+        withSecurityGroupIds(sg.getGroupId());
+    }
+
     public EncoderInstance(String encoderInstanceProfileARN, SecurityGroup sg, String bucketName, String queueURL) {
         Tag infrastructureTypeTag = new Tag();
         infrastructureTypeTag.setKey("infrastructure-type");
@@ -34,7 +55,7 @@ public class EncoderInstance extends RunInstancesRequest {
         encoderIAM.setArn(encoderInstanceProfileARN);
 
         withImageId("ami-0bdf93799014acdc4");
-        withKeyName("school"); //KGs key, remove later
+        withKeyName("school");
         withInstanceType(InstanceType.T2Micro);
         withTagSpecifications(tagSpecification);
         withIamInstanceProfile(encoderIAM);
@@ -56,6 +77,44 @@ public class EncoderInstance extends RunInstancesRequest {
         String arn = ip.getArn();
         System.out.println("ARN: " + arn);
         return arn;
+    }
+
+    public static void start(String imageID, AWSCredentialsProvider cp, String bucketName, String queueURL) {
+        AmazonIdentityManagement aim = AmazonIdentityManagementAsyncClientBuilder.standard()
+                .withRegion(Regions.EU_CENTRAL_1)
+                .withCredentials(cp)
+                .build();
+
+        try{
+            createEncoderRole(aim);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            GetInstanceProfileRequest gipr = new GetInstanceProfileRequest();
+            gipr.setInstanceProfileName("encoder-iam-instance-profile-v1");
+            String arn = aim.getInstanceProfile(gipr).getInstanceProfile().getArn();
+
+            AmazonEC2 ec2Client = AmazonEC2ClientBuilder.standard()
+                    .withRegion(Regions.EU_CENTRAL_1)
+                    .withCredentials(cp)
+                    .build();
+
+            SecurityGroup sg = SecurityGroupCreator.create(ec2Client, "encoder-security-group", Arrays.asList(new SecurityGroupCreator.PortRange(22, 22)));
+
+            RunInstancesResult result = ec2Client.runInstances(new EncoderInstance(imageID, arn, sg, bucketName, queueURL));
+
+            System.out.println(result.getReservation().getReservationId());
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     public static void start(AWSCredentialsProvider cp, String bucketName, String queueURL) {
