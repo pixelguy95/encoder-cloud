@@ -45,7 +45,8 @@ public class ClientCore {
 
         PutObjectRequest request = new PutObjectRequest(bucketName, file.getName(), new File(file.getPath()));
 
-        request.setGeneralProgressListener(progressEvent -> System.out.println("Transferred bytes: " + progressEvent.getBytesTransferred()));
+        request.setGeneralProgressListener(progressEvent ->
+                System.out.println("Transferred bytes: " + progressEvent.getBytesTransferred() + "/" + file.length()));
         Upload upload = tm.upload(request);
 
         try {
@@ -70,7 +71,7 @@ public class ClientCore {
     public static void main(String[] args) throws IOException, TimeoutException {
 
         if (args.length < 3) {
-            System.out.println("-------------Invalid input-------------\n\t" +
+            System.out.println("-------------Invalid input-------------\n" +
                     "Expected args: [bucketName] [queueURL] [fileToConvert/path]");
             System.exit(0);
         }
