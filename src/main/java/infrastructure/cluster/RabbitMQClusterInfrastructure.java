@@ -25,7 +25,7 @@ import java.util.*;
 public class RabbitMQClusterInfrastructure {
 
     public static final String RABBITMQ_SECURITYGROUP = "rabbitmq-securitygroup";
-    public static final String RABBITMQ_CLUSTER_LOADBALANCER = "rabbitmq-cluster-cluster";
+    public static final String RABBITMQ_CLUSTER_LOADBALANCER = "rabbitmq-cluster-loadbalancer";
     public static final String RABBITMQ_CLUSTER_INSTANCE_LAUNCH_CONFIG = "rabbitmq-cluster-instance-launch-config";
     public static final String RABBITMQ_CLUSTER_AUTOSCALING_GROUP = "rabbitmq-cluster-autoscaling-group";
 
