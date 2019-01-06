@@ -67,9 +67,11 @@ public class EncoderConsumer implements DeliverCallback {
                     "avi");
 
             System.out.println("Running command: \n\t" + pb.command().toString());
+            pb.inheritIO();
             Process p = pb.start();
             try {
                 System.out.println("Converting file...");
+
                 p.waitFor();
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -103,6 +105,8 @@ public class EncoderConsumer implements DeliverCallback {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+        } else {
+            System.out.println("File already exists on s3, skipping");
         }
     }
 
