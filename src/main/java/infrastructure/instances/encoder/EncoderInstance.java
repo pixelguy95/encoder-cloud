@@ -34,7 +34,7 @@ public class EncoderInstance extends RunInstancesRequest {
         encoderIAM.setArn(encoderInstanceProfileARN);
 
         withImageId("ami-0bdf93799014acdc4");
-        withKeyName("my-key-pair-eu"); //KGs key, remove later
+        withKeyName("school"); //KGs key, remove later
         withInstanceType(InstanceType.T2Micro);
         withTagSpecifications(tagSpecification);
         withIamInstanceProfile(encoderIAM);
@@ -58,7 +58,7 @@ public class EncoderInstance extends RunInstancesRequest {
         return arn;
     }
 
-    public static void start(AWSCredentialsProvider cp) {
+    public static void start(AWSCredentialsProvider cp, String bucketName, String queueURL) {
         AmazonIdentityManagement aim = AmazonIdentityManagementAsyncClientBuilder.standard()
                 .withRegion(Regions.EU_CENTRAL_1)
                 .withCredentials(cp)
@@ -88,7 +88,7 @@ public class EncoderInstance extends RunInstancesRequest {
 
             SecurityGroup sg = SecurityGroupCreator.create(ec2Client, "encoder-security-group", Arrays.asList(new SecurityGroupCreator.PortRange(22, 22)));
 
-            RunInstancesResult result = ec2Client.runInstances(new EncoderInstance(arn, sg, "temp", "temp"));
+            RunInstancesResult result = ec2Client.runInstances(new EncoderInstance(arn, sg, bucketName, queueURL));
 
             System.out.println(result.getReservation().getReservationId());
         } catch (Exception e) {

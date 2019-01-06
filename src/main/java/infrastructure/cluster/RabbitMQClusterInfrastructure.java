@@ -29,7 +29,7 @@ public class RabbitMQClusterInfrastructure {
     public static final String RABBITMQ_CLUSTER_INSTANCE_LAUNCH_CONFIG = "rabbitmq-cluster-instance-launch-config";
     public static final String RABBITMQ_CLUSTER_AUTOSCALING_GROUP = "rabbitmq-cluster-autoscaling-group";
 
-    public static void create(AWSCredentialsProvider cp) {
+    public static String create(AWSCredentialsProvider cp) {
         AmazonElasticLoadBalancing loadbalancerClient = AmazonElasticLoadBalancingClientBuilder
                 .standard()
                 .withCredentials(cp)
@@ -81,6 +81,7 @@ public class RabbitMQClusterInfrastructure {
         System.out.println("DONE, might take approx 2 mins before the cluster is finished");
         System.out.println("Loadbalancer DNS: ");
         System.out.println("http://" + getLoadBalancerDNSName(loadbalancerClient) + ":15672");
+        return getLoadBalancerDNSName(loadbalancerClient);
     }
 
     private static String getLoadBalancerDNSName(AmazonElasticLoadBalancing loadbalancerClient) {
