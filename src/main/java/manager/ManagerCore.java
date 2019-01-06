@@ -9,6 +9,7 @@ import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.InstanceState;
 import com.amazonaws.util.EC2MetadataUtils;
+import com.rabbitmq.client.AMQP;
 import infrastructure.instances.manager.ManagerInstance;
 
 import java.io.IOException;
@@ -21,7 +22,11 @@ public class ManagerCore implements Runnable {
     private boolean replica;
     private AmazonEC2 ec2Client;
 
-    public ManagerCore() throws InterruptedException {
+    private QueueChannelWrapper queueWrapper;
+
+    public ManagerCore() throws InterruptedException, IOException, TimeoutException {
+
+        queueWrapper = new QueueChannelWrapper();
         AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
 
         ec2Client = AmazonEC2ClientBuilder.standard()
@@ -61,7 +66,6 @@ public class ManagerCore implements Runnable {
     public int countManagerInstances() {
         AtomicInteger count = new AtomicInteger();
         try {
-            //TODO: replica if there already is a manager tagged instance running
             ec2Client.describeInstances().getReservations()
                     .forEach(reservation-> reservation.getInstances().stream().filter(i->i.getState().getCode() == 16)
                             .forEach(instance -> instance.getTags().forEach(tag -> {
@@ -86,7 +90,18 @@ public class ManagerCore implements Runnable {
                 e.printStackTrace();
             }
 
-            log("I am manager I am alive");
+            AMQP.Queue.DeclareOk ok = null;
+            try {
+                ok = queueWrapper.channel.queueDeclare(QueueChannelWrapper.ENCODING_REQUEST_QUEUE, true, false, false, null);
+                double queueSize = ok.getMessageCount();
+                double consumerSize = ok.getConsumerCount();
+
+                log("Encoding queue size: " + queueSize + ", Nr of encoders: " + consumerSize);
+
+            } catch (IOException e) {
+                log(e.getMessage());
+            }
+
         }
     }
 
