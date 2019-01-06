@@ -46,11 +46,8 @@ public class EncoderCore {
     private String bucket_name = "kgencoderbucket";
 
     public EncoderCore() {
-
         amazonS3Client = new AmazonS3Client(getAwsCredentials());
         amazonEC2Client = new AmazonEC2Client(getAwsCredentials());
-
-
     }
 
 
