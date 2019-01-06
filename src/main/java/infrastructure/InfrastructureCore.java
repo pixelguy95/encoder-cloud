@@ -17,6 +17,7 @@ public class InfrastructureCore {
 
         cp = CredentialsFetch.getCredentialsProvider();
 
+        S3BucketSetup.create(cp);
         RabbitMQClusterInfrastructure.create(cp);
         ManagerInstance.start(cp);
     }

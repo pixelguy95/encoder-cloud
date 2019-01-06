@@ -26,7 +26,7 @@ public class ManagerCore implements Runnable {
 
     public ManagerCore() throws InterruptedException, IOException, TimeoutException {
 
-        queueWrapper = new QueueChannelWrapper();
+        queueWrapper = new QueueChannelWrapper("a"); //TODO: FIX
         AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
 
         ec2Client = AmazonEC2ClientBuilder.standard()
@@ -98,6 +98,7 @@ public class ManagerCore implements Runnable {
 
                 log("Encoding queue size: " + queueSize + ", Nr of encoders: " + consumerSize);
 
+
             } catch (IOException e) {
                 log(e.getMessage());
             }
@@ -114,7 +115,7 @@ public class ManagerCore implements Runnable {
     }
 
     public static void createQueueWrapper() throws IOException, TimeoutException {
-        qcw = new QueueChannelWrapper();
+        qcw = new QueueChannelWrapper("a"); //TODO: FIX
     }
 
     /**

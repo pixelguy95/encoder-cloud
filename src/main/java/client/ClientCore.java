@@ -30,7 +30,7 @@ public class ClientCore {
             System.exit(0);
         }
 
-        QueueChannelWrapper channelWrapper = new QueueChannelWrapper();
+        QueueChannelWrapper channelWrapper = new QueueChannelWrapper("a"); //TODO: FIX
 
         createBucket(args[0]);
 

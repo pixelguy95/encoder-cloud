@@ -16,7 +16,7 @@ public class EncodingQueueConsumer {
             System.out.println(" [x] Received '" + message + "'");
         };
 
-        QueueChannelWrapper channelWrapper = new QueueChannelWrapper();
+        QueueChannelWrapper channelWrapper = new QueueChannelWrapper("a"); //TODO: FIX
         channelWrapper.channel.basicConsume(ENCODING_REQUEST_QUEUE, true, deliverCallback, consumerTag -> {});
     }
 
