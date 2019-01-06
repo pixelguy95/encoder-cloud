@@ -106,9 +106,17 @@ public class ManagerCore implements Runnable {
 
                 log("Encoding queue size: " + queueSize + ", Nr of encoders: " + nrOfEncoders);
 
-                if(queueSize > nrOfEncoders + 4) {
+                if(queueSize > nrOfEncoders + 1) {
                     log("New encoder instance needed");
                     startNewEncoder(nrOfEncoders);
+
+                    log("Sleeping for 30 seconds now");
+
+                    try {
+                        Thread.sleep(30000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
 
             } catch (IOException e) {
