@@ -58,7 +58,7 @@ public class ClientCore {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        System.out.println("Success! Uploaded: " + file.getName() + "to bucket " + bucketName);
+        System.out.println("Success! Uploaded: " + file.getName() + " to bucket " + bucketName);
     }
 
 
