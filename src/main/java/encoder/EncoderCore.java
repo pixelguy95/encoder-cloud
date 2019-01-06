@@ -1,55 +1,33 @@
 package encoder;
 
 import aws.CredentialsFetch;
-import client.Message;
-import client.prototypes.QueueChannelWrapper;
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.SdkClientException;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatchClientBuilder;
-import com.amazonaws.services.ec2.AmazonEC2Client;
-import com.amazonaws.services.ec2.model.*;
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
-import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder;
-import com.amazonaws.services.identitymanagement.model.ListAccessKeysRequest;
-import com.amazonaws.services.identitymanagement.model.ListAccessKeysResult;
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
-import com.amazonaws.services.s3.transfer.Download;
-import com.amazonaws.services.s3.transfer.Transfer;
-import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.services.s3.transfer.TransferProgress;
-import com.google.gson.Gson;
 import com.rabbitmq.client.*;
-import infrastructure.instances.manager.ManagerInstance;
+import infrastructure.instances.encoder.EncoderInstance;
 
 import java.io.*;
-import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Base64;
 import java.util.List;
-import java.util.Scanner;
 import java.util.concurrent.TimeoutException;
 
 public class EncoderCore {
 
+    private AmazonS3 amazonS3Client;
+
     private Channel channel;
-    private Connection connection;
-
-    private AmazonS3Client amazonS3Client;
-    private AmazonEC2Client amazonEC2Client;
-
     public static String ENCODING_REQUEST_QUEUE = "encoding-request-queue";
-    private String bucket_name = "kgencoderbucket";
+    private String bucket_name = "nico-encoder-bucket-frankfurt"; //TODO: FIX SO BUCKETS ARE CREATED DYNAMICALLY?
 
     public EncoderCore() {
-        amazonS3Client = new AmazonS3Client(getAwsCredentials());
-        amazonEC2Client = new AmazonEC2Client(getAwsCredentials());
+        amazonS3Client = AmazonS3ClientBuilder.standard().withCredentials(CredentialsFetch.getCredentialsProvider()).withRegion(Regions.EU_CENTRAL_1).build();
     }
-
 
     public BasicAWSCredentials getAwsCredentials() {
         return new BasicAWSCredentials(CredentialsFetch.getCredentialsProvider().getCredentials().getAWSAccessKeyId(),
@@ -62,59 +40,64 @@ public class EncoderCore {
         return result.getObjectSummaries();
     }
 
-    private void uploadConvertedFileToS3(String fileName, String path) {
 
-
-        if (!amazonS3Client.doesObjectExist(bucket_name, fileName)) {
-            System.out.println("Uploading...");
-            try {
-                amazonS3Client.putObject(bucket_name, fileName, new File(path));
-            } catch (AmazonServiceException e) {
-                System.err.println(e.getErrorMessage());
-            }
-            System.out.println("Done!");
-        }
-    }
-
-
-    public void getFileFromS3(String keyName) throws IOException {
-
-        System.out.println("Saving file to: " + "movies/unconverted");
+    public void convertAndUpload(String fileKeyName) throws IOException {
 
         //This is where the downloaded file will be saved
-        File localFile = new File(".".concat(keyName));
-        amazonS3Client.getObject(new GetObjectRequest(bucket_name, keyName), localFile);
+        File localFile = new File(fileKeyName);
+        amazonS3Client.getObject(new GetObjectRequest(bucket_name, fileKeyName), localFile);
 
         if (localFile.exists() && localFile.canRead()) {
 
             System.out.println("File successfully downloaded: " + localFile.getAbsolutePath());
-            System.out.println("Converting file...");
 
+            File convertedFile = changeExtension(localFile, ".avi");
 
-            ProcessBuilder pb = new ProcessBuilder("mencoder", localFile.getAbsolutePath(), "mp3lame", "-ovc", "lavc", "-o", localFile.getName().concat("converted").concat(".avi"));
+            ProcessBuilder pb = new ProcessBuilder("sudo",
+                    "mencoder",
+                    localFile.getAbsolutePath(),
+                    "-o",
+                    convertedFile.getName(),
+                    "-oac",
+                    "mp3lame",
+                    "-ovc",
+                    "lavc",
+                    "-lavcopts",
+                    "vcodec=mpeg1video",
+                    "-of",
+                    "avi");
+
+            System.out.println("Running command: \n\t" + pb.command().toString());
             Process p = pb.start();
             try {
+                System.out.println("Converting file...");
                 p.waitFor();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
             if (p.exitValue() == 0) {
-                uploadConvertedFileToS3(keyName.concat(".mp4"), "movies/converted/");
+
+                if (!amazonS3Client.doesObjectExist(bucket_name, convertedFile.getName())) {
+                    System.out.println("Uploading...");
+                    try {
+                        amazonS3Client.putObject(bucket_name, convertedFile.getName(), new File(convertedFile.getPath()));
+                    } catch (AmazonServiceException e) {
+                        System.err.println(e.getErrorMessage());
+                    }
+                    System.out.println("Upload " + convertedFile.getName() + "successful.");
+                    localFile.delete();
+                    convertedFile.delete();
+                }
             }
         }
     }
 
-
-    private void displayTextInputStream(InputStream input) throws IOException {
-        // Read the text input stream one line at a time and display each line.
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-        String line = null;
-        while ((line = reader.readLine()) != null) {
-            System.out.println(line);
-        }
-        System.out.println();
+    public static File changeExtension(File f, String newExtension) {
+        int i = f.getName().lastIndexOf('.');
+        String name = f.getName().substring(0,i);
+        Path currentRelativePath = Paths.get("");
+        return new File(currentRelativePath.toAbsolutePath().toString() + "/" + name + newExtension);
     }
-
 
     public void initRabbitMQConnection() {
 
@@ -124,7 +107,7 @@ public class EncoderCore {
             connectionFactory.setHost("queue.ndersson.io");
             connectionFactory.setUsername("admin");
             connectionFactory.setPassword("kebabpizza");
-            connection = connectionFactory.newConnection();
+            Connection connection = connectionFactory.newConnection();
             channel = connection.createChannel();
             AMQP.Queue.DeclareOk ok = channel.queueDeclare(ENCODING_REQUEST_QUEUE, true, false, false, null);
 
@@ -135,30 +118,22 @@ public class EncoderCore {
         }
     }
 
-    public void createEncoderInstance() {
 
+    private void startEncoderInstance() {
+        try {
 
-        RunInstancesRequest runInstancesRequest = new RunInstancesRequest();
-
-        runInstancesRequest.withImageId("ami-0ac019f4fcb7cb7e6") // subject to change
-                .withInstanceType(InstanceType.T2Micro) // subject to change
-                .withMinCount(1)
-                .withMaxCount(1)
-                .withUserData(Base64.getEncoder().encodeToString(new Scanner(ManagerInstance.class.getResourceAsStream("/encoder-instance.yml"), "UTF-8").useDelimiter("\\A").next().getBytes()))
-                .withKeyName("my-key-pair");
-
-        RunInstancesResult result = amazonEC2Client.runInstances(
-                runInstancesRequest);
-
-        System.out.println("Encoder instance launched with configuration: " + result);
+            AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
+            EncoderInstance.start(cp);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 
 
-    public static void main(String[] args) {
-
+    public static void main(String[] args) throws IOException, TimeoutException {
 
         EncoderCore core = new EncoderCore();
-//        core.createEncoderInstance();
+//        core.startEncoderInstance();
 
         core.initRabbitMQConnection();
 
@@ -170,7 +145,7 @@ public class EncoderCore {
         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");
             System.out.println(" [x] Received '" + message + "'");
-            core.getFileFromS3(message);
+            core.convertAndUpload(message);
         };
         try {
             core.channel.basicConsume(ENCODING_REQUEST_QUEUE, true, deliverCallback, consumerTag -> {
