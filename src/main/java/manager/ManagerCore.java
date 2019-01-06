@@ -7,12 +7,14 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.apigateway.AmazonApiGateway;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
-import com.amazonaws.services.ec2.model.InstanceState;
+import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.util.EC2MetadataUtils;
 import com.rabbitmq.client.AMQP;
+import infrastructure.instances.encoder.EncoderInstance;
 import infrastructure.instances.manager.ManagerInstance;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -22,11 +24,14 @@ public class ManagerCore implements Runnable {
     private boolean replica;
     private AmazonEC2 ec2Client;
 
+    private String bucketName;
     private String queueURL;
 
-    public ManagerCore(String queueURL) throws InterruptedException, IOException, TimeoutException {
+    public ManagerCore(String bucketName, String queueURL) throws InterruptedException, IOException, TimeoutException {
 
+        this.bucketName = bucketName;
         this.queueURL = queueURL;
+
         qcw = new QueueChannelWrapper(queueURL);
         log("MANAGER STARTING");
 
@@ -59,7 +64,7 @@ public class ManagerCore implements Runnable {
     private void startReplica() {
         try {
             AWSCredentialsProvider cp = CredentialsFetch.getCredentialsProvider();
-            ManagerInstance.start(cp, queueURL);
+            ManagerInstance.start(cp, bucketName, queueURL);
         } catch (Exception e) {
             ManagerCore.log(e.getMessage());
         }
@@ -97,10 +102,14 @@ public class ManagerCore implements Runnable {
             try {
                 ok = qcw.channel.queueDeclare(QueueChannelWrapper.ENCODING_REQUEST_QUEUE, true, false, false, null);
                 double queueSize = ok.getMessageCount();
-                double consumerSize = ok.getConsumerCount();
+                double nrOfEncoders = ok.getConsumerCount();
 
-                log("Encoding queue size: " + queueSize + ", Nr of encoders: " + consumerSize);
+                log("Encoding queue size: " + queueSize + ", Nr of encoders: " + nrOfEncoders);
 
+                if(queueSize > nrOfEncoders + 4) {
+                    log("New encoder instance needed");
+                    startNewEncoder(nrOfEncoders);
+                }
 
             } catch (IOException e) {
                 log(e.getMessage());
@@ -109,10 +118,72 @@ public class ManagerCore implements Runnable {
         }
     }
 
+    private void startNewEncoder(double nrOfEncoders) {
+
+        List<Image> images = ec2Client.describeImages().getImages();
+        boolean containsEncoderImage = false;
+        Image encoderImage = null;
+        for(Image i : images) {
+            if(i.getName().equals("encoder-instance-image-v1")) {
+                containsEncoderImage = true;
+                encoderImage = i;
+            }
+        }
+
+        if(!containsEncoderImage && nrOfEncoders > 0) {
+            encoderImage = createEncoderImage();
+            startEncoderFromImage(encoderImage);
+        } else if(containsEncoderImage) {
+            startEncoderFromImage(encoderImage);
+        } else if (!containsEncoderImage && nrOfEncoders == 0) {
+            startBrandNewEncoder();
+        }
+    }
+
+    private void startBrandNewEncoder() {
+        log("Starting new encoder from scratch, will take time to boot properly");
+        EncoderInstance.start(CredentialsFetch.getCredentialsProvider(), bucketName, queueURL);
+        log("Done!");
+    }
+
+    private void startEncoderFromImage(Image encoderImage) {
+        log("Starting new encoder from image");
+        EncoderInstance.start(encoderImage.getImageId(), CredentialsFetch.getCredentialsProvider(), bucketName, queueURL);
+        log("Done!");
+    }
+
+    private Image createEncoderImage() {
+        log("Creating fresh encoder image");
+
+        Instance createImageFrom = null;
+        List<Reservation> reservations = ec2Client.describeInstances().getReservations();
+
+        for(Reservation r : reservations) {
+            List<Instance> instances = r.getInstances();
+            for(Instance instance : instances) {
+                List<Tag> tags = instance.getTags();
+                for(Tag tag : tags) {
+                    if(tag.getKey().equals("infrastructure-type") && tag.getValue().startsWith("encoder ")) {
+                        createImageFrom = instance;
+                    }
+                }
+            }
+        }
+
+        CreateImageRequest cir = new CreateImageRequest();
+        cir.setInstanceId(createImageFrom.getInstanceId());
+        cir.setName("encoder-instance-image-v1");
+        String imageID = ec2Client.createImage(cir).getImageId();
+
+        log("Image created!");
+
+        return ec2Client.describeImages(new DescribeImagesRequest().withImageIds(imageID)).getImages().get(0);
+    }
+
     public static void main(String args[]) throws IOException, TimeoutException, InterruptedException {
 
 
-        new ManagerCore(args[0]);
+        new ManagerCore(args[0], args[1]);
     }
 
     /**

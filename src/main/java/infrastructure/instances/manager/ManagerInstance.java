@@ -23,7 +23,7 @@ import java.util.Scanner;
 
 public class ManagerInstance extends RunInstancesRequest {
 
-    public ManagerInstance(String managerInstanceProfileARN, String queueURL) {
+    public ManagerInstance(String managerInstanceProfileARN, String bucketName, String queueURL) {
 
         Tag infrastructureTypeTag = new Tag();
         infrastructureTypeTag.setKey("infrastructure-type");
@@ -41,6 +41,7 @@ public class ManagerInstance extends RunInstancesRequest {
         withTagSpecifications(tagSpecification);
         withIamInstanceProfile(managerIAM);
         String launchConfigContents = new Scanner(ManagerInstance.class.getResourceAsStream("/manager-replica-instance.yml"), "UTF-8").useDelimiter("\\A").next();
+        launchConfigContents = launchConfigContents.replaceAll("%BUCKETNAME%", bucketName);
         launchConfigContents = launchConfigContents.replaceAll("%QUEUEURL%", queueURL);
         withUserData(Base64.getEncoder().encodeToString(launchConfigContents.getBytes()));
         withMinCount(1);
@@ -67,7 +68,7 @@ public class ManagerInstance extends RunInstancesRequest {
         return arn;
     }
 
-    public static void start(AWSCredentialsProvider cp, String queueURL) {
+    public static void start(AWSCredentialsProvider cp, String bucketName, String queueURL) {
         AmazonIdentityManagement aim = AmazonIdentityManagementAsyncClientBuilder.standard()
                 .withRegion(Regions.EU_CENTRAL_1)
                 .withCredentials(cp)
@@ -95,7 +96,7 @@ public class ManagerInstance extends RunInstancesRequest {
                     .withCredentials(cp)
                     .build();
 
-            RunInstancesResult result = ec2Client.runInstances(new ManagerInstance(arn, queueURL));
+            RunInstancesResult result = ec2Client.runInstances(new ManagerInstance(arn, bucketName, queueURL));
 
             System.out.println(result.getReservation().getReservationId());
         } catch (Exception e) {
