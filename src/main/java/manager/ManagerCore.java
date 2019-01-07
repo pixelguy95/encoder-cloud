@@ -120,7 +120,7 @@ public class ManagerCore implements Runnable {
                 }
 
                 if(queueSize < nrOfEncoders && nrOfEncoders > 1) {
-                    killEncoders(nrOfEncoders - queueSize);
+                    killEncoders((nrOfEncoders - queueSize) - 1);
                 }
 
             } catch (IOException e) {
