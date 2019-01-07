@@ -200,20 +200,28 @@ public class ManagerCore implements Runnable {
                     DescribeImagesRequest dir = new DescribeImagesRequest();
                     dir.setOwners(Arrays.asList("self"));
                     List<Image> all = ec2Client.describeImages(dir).getImages();
+                    boolean done = false;
 
                     for (Image image : all) {
                         if (image.getName().equals("encoder-instance-image-v1") && image.getState().equals("available")) {
+                            log("Available!");
+                            done = true;
                             break;
                         }
 
                         log(image.getState() + " " + image.getState().equals("available"));
                     }
+
+                    if(done)
+                        break;
+
                     Thread.sleep(5000);
                 }
 
             } catch (Exception e) {
                 log(e.getMessage());
             }
+
             log("Image is available now");
 
             startEncoderFromImage(encoderImage, encodersToCreate);
