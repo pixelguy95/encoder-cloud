@@ -38,7 +38,7 @@ public class EncoderInstance extends RunInstancesRequest {
         withInstanceType(InstanceType.T2Medium);
         withTagSpecifications(tagSpecification);
         withIamInstanceProfile(encoderIAM);
-        withMinCount(encodersToCreate);
+        withMinCount(1);
         withMaxCount(encodersToCreate);
         withSecurityGroupIds(sg.getGroupId());
     }
@@ -63,7 +63,7 @@ public class EncoderInstance extends RunInstancesRequest {
         launchConfigContents = launchConfigContents.replaceAll("%BUCKETNAME%", bucketName);
         launchConfigContents = launchConfigContents.replaceAll("%QUEUEURL%", queueURL);
         withUserData(Base64.getEncoder().encodeToString(launchConfigContents.getBytes()));
-        withMinCount(encodersToCreate);
+        withMinCount(1);
         withMaxCount(encodersToCreate);
         withSecurityGroupIds(sg.getGroupId());
     }

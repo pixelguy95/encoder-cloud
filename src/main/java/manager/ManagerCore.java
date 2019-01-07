@@ -106,9 +106,9 @@ public class ManagerCore implements Runnable {
 
                 log("Encoding queue size: " + queueSize + ", Nr of encoders: " + nrOfEncoders);
 
-                if (queueSize > nrOfEncoders + 1) {
+                if (queueSize > nrOfEncoders * 1.2) {
                     log("New encoder instance needed");
-                    startNewEncoder(nrOfEncoders, (int) (queueSize - nrOfEncoders));
+                    startNewEncoder(nrOfEncoders, (int) Math.floor(queueSize - (nrOfEncoders * 1.2)));
 
                     log("Sleeping for 30 seconds now");
 
@@ -119,8 +119,8 @@ public class ManagerCore implements Runnable {
                     }
                 }
 
-                if(queueSize == 0 && nrOfEncoders > 1) {
-                    killEncoders(nrOfEncoders - 1);
+                if(queueSize < nrOfEncoders && nrOfEncoders > 1) {
+                    killEncoders(nrOfEncoders - queueSize);
                 }
 
             } catch (IOException e) {
