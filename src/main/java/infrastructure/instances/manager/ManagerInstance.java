@@ -10,6 +10,7 @@ import com.amazonaws.services.identitymanagement.AmazonIdentityManagementAsyncCl
 import com.amazonaws.services.identitymanagement.model.GetInstanceProfileRequest;
 import com.amazonaws.services.identitymanagement.model.InstanceProfile;
 import infrastructure.iam.InstanceProfileCreator;
+import infrastructure.instances.encoder.EncoderInstance;
 import manager.ManagerCore;
 
 import java.io.IOException;
@@ -22,7 +23,7 @@ import java.util.Scanner;
 
 public class ManagerInstance extends RunInstancesRequest {
 
-    public ManagerInstance(String managerInstanceProfileARN) {
+    public ManagerInstance(String managerInstanceProfileARN, String bucketName, String queueURL) {
 
         Tag infrastructureTypeTag = new Tag();
         infrastructureTypeTag.setKey("infrastructure-type");
@@ -39,7 +40,10 @@ public class ManagerInstance extends RunInstancesRequest {
         withInstanceType(InstanceType.T2Micro);
         withTagSpecifications(tagSpecification);
         withIamInstanceProfile(managerIAM);
-        withUserData(Base64.getEncoder().encodeToString(new Scanner(ManagerInstance.class.getResourceAsStream("/manager-replica-instance.yml"), "UTF-8").useDelimiter("\\A").next().getBytes()));
+        String launchConfigContents = new Scanner(ManagerInstance.class.getResourceAsStream("/manager-replica-instance.yml"), "UTF-8").useDelimiter("\\A").next();
+        launchConfigContents = launchConfigContents.replaceAll("%BUCKETNAME%", bucketName);
+        launchConfigContents = launchConfigContents.replaceAll("%QUEUEURL%", queueURL);
+        withUserData(Base64.getEncoder().encodeToString(launchConfigContents.getBytes()));
         withMinCount(1);
         withMaxCount(1);
     }
@@ -64,7 +68,7 @@ public class ManagerInstance extends RunInstancesRequest {
         return arn;
     }
 
-    public static void start(AWSCredentialsProvider cp) {
+    public static void start(AWSCredentialsProvider cp, String bucketName, String queueURL) {
         AmazonIdentityManagement aim = AmazonIdentityManagementAsyncClientBuilder.standard()
                 .withRegion(Regions.EU_CENTRAL_1)
                 .withCredentials(cp)
@@ -92,7 +96,7 @@ public class ManagerInstance extends RunInstancesRequest {
                     .withCredentials(cp)
                     .build();
 
-            RunInstancesResult result = ec2Client.runInstances(new ManagerInstance(arn));
+            RunInstancesResult result = ec2Client.runInstances(new ManagerInstance(arn, bucketName, queueURL));
 
             System.out.println(result.getReservation().getReservationId());
         } catch (Exception e) {

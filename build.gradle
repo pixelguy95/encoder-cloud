@@ -77,6 +77,19 @@ task encoderJar(type: Jar) {
     exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
 }
 
+task clientJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'encoder-cloud-client',
+                'Implementation-Version': version,
+                'Main-Class': 'client.ClientCore'
+    }
+    baseName = project.name + '-client'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
+}
+
 
 
 
