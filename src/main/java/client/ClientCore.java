@@ -33,10 +33,13 @@ public class ClientCore {
                 withRegion(Regions.EU_CENTRAL_1).build();
 
         channelWrapper = new QueueChannelWrapper(queueURL);
+
         for(int i = 0; i < 10; i++) {
             upload(bucketName, new File(filePath), (i)+".mp4");
             sendMessage((i)+".mp4", channelWrapper.channel);
         }
+        channelWrapper.shutdown();
+
     }
 
     private void upload(String bucketName, File file, String s3name) {
@@ -64,9 +67,11 @@ public class ClientCore {
     }
 
 
+
     private void sendMessage(String s3Name, Channel channel) throws IOException {
         channel.basicPublish("", QueueChannelWrapper.ENCODING_REQUEST_QUEUE, null, s3Name.getBytes());
         System.out.println("was ist das: " + s3Name.getBytes());
+
     }
 
 
@@ -80,21 +85,4 @@ public class ClientCore {
 
         new ClientCore(args[0], args[1], args[2]);
     }
-
-
-    //    private static void createBucket(String bucketName) {
-//        if(!s3.doesBucketExistV2(bucketName)) {
-//            System.out.println("Create bucket");
-//            s3.createBucket(bucketName);
-//        }
-//    }
-
-
-//    private static String buildMQMessage(String key) {
-//        Message message = new Message();
-//        message.setKey(key);
-//
-//        Gson gson = new Gson();
-//        return gson.toJson(message);
-//    }
 }

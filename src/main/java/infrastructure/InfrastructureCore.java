@@ -37,7 +37,9 @@ public class InfrastructureCore {
         while(true) {
             try {
                 Thread.sleep(5000);
+                System.out.println("Not done, trying again...");
                 new QueueChannelWrapper(queueURL);
+                System.out.println("QueueChannelWrapper Done");
                 break;
             } catch (Exception e) {
             }
