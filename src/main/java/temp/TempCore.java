@@ -24,6 +24,6 @@ public class TempCore {
 
         AmazonEC2 ec2Client = AmazonEC2ClientBuilder.standard().withCredentials(cp).withRegion(Regions.EU_CENTRAL_1).build();
 
-        ManagerInstance.start(cp, "encoder-bucket-acs2xqlbmggy91e-c24ykkskrnhz1g5ltsmoa7pkhk", "rabbitmq-cluster-loadbalancer-528595232.eu-central-1.elb.amazonaws.com");
+        ManagerInstance.start(cp, "encoder-bucket-hujb2klcx0ab5p3r6vjkpzsacobze-dzc92ard21ycq", "rabbitmq-cluster-loadbalancer-528595232.eu-central-1.elb.amazonaws.com");
     }
 }
