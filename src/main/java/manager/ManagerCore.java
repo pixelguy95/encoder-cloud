@@ -150,6 +150,13 @@ public class ManagerCore implements Runnable {
                         TerminateInstancesRequest tir = new TerminateInstancesRequest();
                         tir.setInstanceIds(Arrays.asList(instance.getInstanceId()));
                         ec2Client.terminateInstances(tir);
+
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
                         killed++;
 
                         break;
