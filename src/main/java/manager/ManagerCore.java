@@ -38,7 +38,7 @@ public class ManagerCore implements Runnable {
         this.bucketName = bucketName;
         this.queueURL = queueURL;
 
-        rabbitMQClusterClient = new Client(queueURL+ ":15672/api/", "admin", "kebabpizza");
+        rabbitMQClusterClient = new Client("http://" + queueURL+ ":15672/api/", "admin", "kebabpizza");
 
         qcw = new QueueChannelWrapper(queueURL);
         log("MANAGER STARTING");
