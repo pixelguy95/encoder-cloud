@@ -56,7 +56,7 @@ public class EncoderInstance extends RunInstancesRequest {
 
         withImageId("ami-0bdf93799014acdc4");
         withKeyName("school");
-        withInstanceType(InstanceType.T2Micro);
+        withInstanceType(InstanceType.T2Medium);
         withTagSpecifications(tagSpecification);
         withIamInstanceProfile(encoderIAM);
         String launchConfigContents = new Scanner(EncoderInstance.class.getResourceAsStream("/encoder-instance.yml"), "UTF-8").useDelimiter("\\A").next();

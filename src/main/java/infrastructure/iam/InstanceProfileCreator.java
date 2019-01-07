@@ -59,17 +59,17 @@ public class InstanceProfileCreator {
 
             }
 
-            Thread.sleep(4000);
+            Thread.sleep(5000);
             CreateInstanceProfileRequest cipr = new CreateInstanceProfileRequest();
             cipr.setInstanceProfileName(instanceProfileName);
             aim.createInstanceProfile(cipr);
 
-            Thread.sleep(4000);
+            Thread.sleep(5000);
             AddRoleToInstanceProfileRequest artipr = new AddRoleToInstanceProfileRequest();
             artipr.setInstanceProfileName(instanceProfileName);
             artipr.setRoleName(roleName);
             aim.addRoleToInstanceProfile(artipr);
-            Thread.sleep(4000);
+            Thread.sleep(5000);
 
         } catch (Exception e) {
             e.printStackTrace();

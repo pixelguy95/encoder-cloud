@@ -50,8 +50,6 @@ public class ClientCore implements Runnable{
 
         PutObjectRequest request = new PutObjectRequest(bucketName, s3name, new File(file.getPath()));
 
-        request.setGeneralProgressListener(progressEvent ->
-                System.out.println("Transferred bytes: " + progressEvent.getBytesTransferred() + "/" + file.length()));
         Upload upload = tm.upload(request);
 
         try {
@@ -102,6 +100,6 @@ public class ClientCore implements Runnable{
                 }
                 counter++;
             }
-        },Integer.toUnsignedLong(time));
+        },0, Integer.toUnsignedLong(time));
     }
 }
