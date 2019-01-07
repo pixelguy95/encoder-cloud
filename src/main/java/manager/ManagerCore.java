@@ -128,7 +128,14 @@ public class ManagerCore implements Runnable {
 
     private void startNewEncoder(double nrOfEncoders) {
 
-        List<Image> images = ec2Client.describeImages().getImages();
+        log("Going through all existing images");
+        List<Image> images = null;
+        try {
+            images = ec2Client.describeImages().getImages();
+        } catch (Exception e) {
+            log(e.getMessage());
+        }
+
         boolean containsEncoderImage = false;
         Image encoderImage = null;
         for(Image i : images) {
@@ -137,6 +144,7 @@ public class ManagerCore implements Runnable {
                 encoderImage = i;
             }
         }
+        log("Found existing encoder image? " + containsEncoderImage);
 
         if(!containsEncoderImage && nrOfEncoders > 0) {
             encoderImage = createEncoderImage();
