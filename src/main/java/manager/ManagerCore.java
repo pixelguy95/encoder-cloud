@@ -17,6 +17,7 @@ import infrastructure.instances.manager.ManagerInstance;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -130,7 +131,7 @@ public class ManagerCore implements Runnable {
                     }
                 }
 
-                if(queueSize == 0 && nrOfEncoders > 1) {
+                if(queueSize < nrOfEncoders && nrOfEncoders > 1) {
 
                     try {
                         Thread.sleep(1000);
@@ -141,19 +142,17 @@ public class ManagerCore implements Runnable {
                     QueueInfo queueInfo = rabbitMQClusterClient.getQueue("/", QueueChannelWrapper.ENCODING_REQUEST_QUEUE);
                     double unAcked = queueInfo.getMessagesUnacknowledged();
 
-                    if(unAcked == 0) {
-                        killEncoders((nrOfEncoders - queueSize) - 1);
-                        log("Sleeping for 30 seconds now");
+                    log(queueSize + " " + unAcked + " " + nrOfEncoders);
 
-                        try {
-                            Thread.sleep(30000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+                    if(queueSize + unAcked < nrOfEncoders) {
+                        log("Killing " + Math.max(nrOfEncoders - queueSize  - unAcked, 0) + " instances");
+                        killEncoders(Math.max(nrOfEncoders - queueSize  - unAcked, 0));
                     }
+
+
                 }
 
-            } catch (IOException e) {
+            } catch (IOException | InterruptedException e) {
                 log(e.getMessage());
             }
 
@@ -163,6 +162,7 @@ public class ManagerCore implements Runnable {
     private void killEncoders(double encodersToKill) {
         List<Reservation> reservations = ec2Client.describeInstances().getReservations();
 
+        List<Instance> toKill = new ArrayList<>();
         int killed = 0;
         log("Going through, all instances, killing encoders until satisfied");
         for (Reservation r : reservations) {
@@ -205,7 +205,7 @@ public class ManagerCore implements Runnable {
         log("Killed " + killed + " encoders");
     }
 
-    private void startNewEncoder(double currentNrOfEncoders, int encodersToCreate) {
+    private void startNewEncoder(double currentNrOfEncoders, int encodersToCreate) throws IOException, InterruptedException {
 
         log("Going through all existing images");
         List<Image> images = null;
@@ -269,9 +269,21 @@ public class ManagerCore implements Runnable {
         }
     }
 
-    private void startBrandNewEncoder(int encodersToCreate) {
+    private void startBrandNewEncoder(int encodersToCreate) throws InterruptedException, IOException {
         log("Starting new encoder(s) + " + encodersToCreate + " from scratch, will take time to boot properly");
         EncoderInstance.start(CredentialsFetch.getCredentialsProvider(), bucketName, queueURL, encodersToCreate);
+
+        while(true) {
+            double nrOfEncoders = qcw.channel.queueDeclare(QueueChannelWrapper.ENCODING_REQUEST_QUEUE, true, false, false, null).getConsumerCount();
+
+            if(nrOfEncoders > 0) {
+                break;
+            }
+            else {
+                log("Waiting for new instance to start...");
+                Thread.sleep(6000);
+            }
+        }
 
         log("Done!, Sleeping extra 60 seconds");
         try {
