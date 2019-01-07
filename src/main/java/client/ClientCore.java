@@ -18,27 +18,27 @@ import com.rabbitmq.client.ConnectionFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeoutException;
 
 
-public class ClientCore {
+public class ClientCore implements Runnable{
 
     private AmazonS3 s3;
     private QueueChannelWrapper channelWrapper;
+    private String bucketName;
+    private String queueURL;
+    private String filePath;
+    private int time;
 
 
-    public ClientCore(String bucketName, String queueURL, String filePath) throws IOException, TimeoutException {
+    public ClientCore(String bucketName, String queueURL, String filePath, int time) throws IOException, TimeoutException {
 
-        s3 = AmazonS3ClientBuilder.standard().withCredentials(CredentialsFetch.getCredentialsProvider()).
-                withRegion(Regions.EU_CENTRAL_1).build();
-
-        channelWrapper = new QueueChannelWrapper(queueURL);
-
-        for(int i = 0; i < 16; i++) {
-            upload(bucketName, new File(filePath), (i)+".mp4");
-            sendMessage((i)+".mp4", channelWrapper.channel);
-        }
-       // channelWrapper.shutdown();
+        this.bucketName = bucketName;
+        this.queueURL = queueURL;
+        this.filePath = filePath;
+        this.time = time;
 
     }
 
@@ -74,15 +74,34 @@ public class ClientCore {
 
     }
 
+    @Override
+    public void run() {
 
-    public static void main(String[] args) throws IOException, TimeoutException {
+        s3 = AmazonS3ClientBuilder.standard().withCredentials(CredentialsFetch.getCredentialsProvider()).
+                withRegion(Regions.EU_CENTRAL_1).build();
 
-        if (args.length < 3) {
-            System.out.println("-------------Invalid input-------------\n" +
-                    "Expected args: [bucketName] [queueURL] [fileToConvert/path]");
-            System.exit(0);
+        try {
+            channelWrapper = new QueueChannelWrapper(queueURL);
+        } catch (IOException | TimeoutException e) {
+            e.printStackTrace();
         }
 
-        new ClientCore(args[0], args[1], args[2]);
+        Timer timer = new Timer();
+
+
+        timer.schedule(new TimerTask() {
+            int counter = 0;
+            @Override
+            public void run() {
+                upload(bucketName, new File(filePath), Thread.currentThread().getName()+ counter +".mp4");
+
+                try {
+                    sendMessage(Thread.currentThread().getName()+ counter +".mp4", channelWrapper.channel);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                counter++;
+            }
+        },Integer.toUnsignedLong(time));
     }
 }
