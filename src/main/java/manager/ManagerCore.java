@@ -110,10 +110,10 @@ public class ManagerCore implements Runnable {
                 ok = qcw.channel.queueDeclare(QueueChannelWrapper.ENCODING_REQUEST_QUEUE, true, false, false, null); //Just in case
 
                 double queueSize = ok.getMessageCount();
+                double nrOfEncoders = ok.getConsumerCount();
 
-                QueueInfo queueInfo = rabbitMQClusterClient.getQueue("/", QueueChannelWrapper.ENCODING_REQUEST_QUEUE);
-                double doubleUnAcked = queueInfo.getMessagesUnacknowledged();
-                double nrOfEncoders = queueInfo.getConsumerCount();
+
+
 
                 log("Encoding queue size: " + queueSize + ", Nr of encoders: " + nrOfEncoders);
 
@@ -131,14 +131,25 @@ public class ManagerCore implements Runnable {
                 }
 
                 if(queueSize == 0 && nrOfEncoders > 1) {
-                    killEncoders((nrOfEncoders - queueSize) - 1);
-
-                    log("Sleeping for 30 seconds now");
 
                     try {
-                        Thread.sleep(30000);
+                        Thread.sleep(1000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
+                    }
+
+                    QueueInfo queueInfo = rabbitMQClusterClient.getQueue("/", QueueChannelWrapper.ENCODING_REQUEST_QUEUE);
+                    double unAcked = queueInfo.getMessagesUnacknowledged();
+
+                    if(unAcked == 0) {
+                        killEncoders((nrOfEncoders - queueSize) - 1);
+                        log("Sleeping for 30 seconds now");
+
+                        try {
+                            Thread.sleep(30000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
 
