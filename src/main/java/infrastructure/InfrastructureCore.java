@@ -3,6 +3,14 @@ package infrastructure;
 import aws.CredentialsFetch;
 import client.prototypes.QueueChannelWrapper;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
+import com.amazonaws.services.ec2.model.CreateKeyPairRequest;
+import com.amazonaws.services.ec2.model.CreateKeyPairResult;
+import com.amazonaws.services.ec2.model.DescribeKeyPairsResult;
+import com.amazonaws.services.ec2.model.KeyPairInfo;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import infrastructure.cluster.RabbitMQClusterInfrastructure;
 import infrastructure.instances.encoder.EncoderInstance;
 import infrastructure.instances.manager.ManagerInstance;
@@ -18,6 +26,15 @@ public class InfrastructureCore {
     public static void main(String args[]) throws IOException, TimeoutException {
 
         cp = CredentialsFetch.getCredentialsProvider();
+
+        AmazonEC2 ec2Client = AmazonEC2ClientBuilder.standard()
+                .withRegion(Regions.EU_CENTRAL_1)
+                .withCredentials(cp)
+                .build();
+
+        System.out.println("Creating key-pair for ec2");
+        createKeyPair(ec2Client);
+
 
         String bucketName = S3BucketSetup.create(cp);
         String queueURL = RabbitMQClusterInfrastructure.create(cp);
@@ -46,4 +63,21 @@ public class InfrastructureCore {
         }
     }
 
+    private static void createKeyPair(AmazonEC2 ec2Client) {
+
+        boolean hasKey_pair = false;
+
+        DescribeKeyPairsResult response = ec2Client.describeKeyPairs();
+
+        for(KeyPairInfo key_pair : response.getKeyPairs()) {
+            if(key_pair.getKeyName().equals("school")){
+                hasKey_pair = true;
+            }
+        }
+
+        if(!hasKey_pair) {
+            CreateKeyPairRequest request = new CreateKeyPairRequest().withKeyName("school");
+            ec2Client.createKeyPair(request);
+        }
+    }
 }

@@ -188,5 +188,4 @@ public class RabbitMQClusterInfrastructure {
         return SecurityGroupCreator.create(ec2Client, RABBITMQ_SECURITYGROUP, ports);
     }
 
-
 }

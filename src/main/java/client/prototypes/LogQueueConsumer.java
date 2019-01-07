@@ -12,7 +12,7 @@ public class LogQueueConsumer {
 
     public static void main(String args[]) throws IOException, TimeoutException {
 
-        QueueChannelWrapper channelWrapper = new QueueChannelWrapper("rabbitmq-cluster-loadbalancer-528595232.eu-central-1.elb.amazonaws.com");
+        QueueChannelWrapper channelWrapper = new QueueChannelWrapper("rabbitmq-cluster-loadbalancer-2142494906.eu-central-1.elb.amazonaws.com");
         channelWrapper.channel.basicConsume(BASIC_LOG_QUEUE, true, new LogConsumer(channelWrapper.channel));
     }
 
