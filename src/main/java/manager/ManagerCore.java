@@ -43,13 +43,13 @@ public class ManagerCore implements Runnable {
                 .withCredentials(cp)
                 .build();
 
-        if(countManagerInstances() > 1) {
+        if (countManagerInstances() > 1) {
             replica = true;
         }
 
-        while(replica) {
+        while (replica) {
             Thread.sleep(5000);
-            if(countManagerInstances() == 1) {
+            if (countManagerInstances() == 1) {
                 log("manager must have died: " + countManagerInstances());
                 replica = false;
             }
@@ -76,10 +76,9 @@ public class ManagerCore implements Runnable {
         AtomicInteger count = new AtomicInteger();
         try {
             ec2Client.describeInstances().getReservations()
-                    .forEach(reservation-> reservation.getInstances().stream().filter(i->i.getState().getCode() == 16)
+                    .forEach(reservation -> reservation.getInstances().stream().filter(i -> i.getState().getCode() == 16)
                             .forEach(instance -> instance.getTags().forEach(tag -> {
-                                if(tag.getValue().startsWith("manager"))
-                                {
+                                if (tag.getValue().startsWith("manager")) {
                                     count.getAndIncrement();
                                 }
                             })));
@@ -92,7 +91,7 @@ public class ManagerCore implements Runnable {
 
     @Override
     public void run() {
-        while(true) {
+        while (true) {
             try {
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
@@ -107,7 +106,7 @@ public class ManagerCore implements Runnable {
 
                 log("Encoding queue size: " + queueSize + ", Nr of encoders: " + nrOfEncoders);
 
-                if(queueSize > nrOfEncoders + 1) {
+                if (queueSize > nrOfEncoders + 1) {
                     log("New encoder instance needed");
                     startNewEncoder(nrOfEncoders);
 
@@ -142,26 +141,26 @@ public class ManagerCore implements Runnable {
         boolean containsEncoderImage = false;
         Image encoderImage = null;
         log("Images found: " + images.size());
-        for(Image i : images) {
-            if(i.getName().equals("encoder-instance-image-v1")) {
+        for (Image i : images) {
+            if (i.getName().equals("encoder-instance-image-v1")) {
                 containsEncoderImage = true;
                 encoderImage = i;
             }
         }
         log("Found existing encoder image? " + containsEncoderImage);
 
-        if(!containsEncoderImage && nrOfEncoders > 0) {
+        if (!containsEncoderImage && nrOfEncoders > 0) {
             encoderImage = createEncoderImage();
 
             log("Waiting for image to become available");
             try {
-                while(true) {
+                while (true) {
                     DescribeImagesRequest dir = new DescribeImagesRequest();
                     dir.setOwners(Arrays.asList("self"));
                     List<Image> all = ec2Client.describeImages(dir).getImages();
 
-                    for(Image image : all) {
-                        if(image.getName().equals("encoder-instance-image-v1") && image.getState().equals("available")) {
+                    for (Image image : all) {
+                        if (image.getName().equals("encoder-instance-image-v1") && image.getState().equals("available")) {
                             break;
                         }
 
@@ -176,7 +175,7 @@ public class ManagerCore implements Runnable {
             log("Image is available now");
 
             startEncoderFromImage(encoderImage);
-        } else if(containsEncoderImage) {
+        } else if (containsEncoderImage) {
             startEncoderFromImage(encoderImage);
         } else if (!containsEncoderImage && nrOfEncoders == 0) {
             startBrandNewEncoder();
@@ -201,17 +200,28 @@ public class ManagerCore implements Runnable {
         Instance createImageFrom = null;
         List<Reservation> reservations = ec2Client.describeInstances().getReservations();
 
-        for(Reservation r : reservations) {
+        log("Going through, all instances");
+        for (Reservation r : reservations) {
             List<Instance> instances = r.getInstances();
-            for(Instance instance : instances) {
+            for (Instance instance : instances) {
                 List<Tag> tags = instance.getTags();
-                for(Tag tag : tags) {
-                    if(tag.getKey().equals("infrastructure-type") && tag.getValue().startsWith("encoder ")) {
+                for (Tag tag : tags) {
+                    if (tag.getKey().equals("infrastructure-type") && tag.getValue().startsWith("encoder ")) {
                         createImageFrom = instance;
+                        break;
                     }
                 }
+
+                if (createImageFrom != null)
+                    break;
             }
+
+            if (createImageFrom != null)
+                break;
         }
+
+        log("Found viable instance");
+        log("Sending image creation request");
 
         CreateImageRequest cir = new CreateImageRequest();
         cir.setInstanceId(createImageFrom.getInstanceId());
@@ -231,13 +241,14 @@ public class ManagerCore implements Runnable {
 
     /**
      * Temporary way of publishing log messages
+     *
      * @param message message will be written to the basic log queue
      */
     public static void log(String message) {
         try {
 
             String identity = "[unknown]";
-            try{
+            try {
                 identity = "[" + EC2MetadataUtils.getInstanceId() + "]";
             } catch (Exception e) {
 
