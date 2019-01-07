@@ -28,11 +28,11 @@ public class TempCore {
             DescribeImagesRequest dir = new DescribeImagesRequest();
             dir.setOwners(Arrays.asList("self"));
             images = ec2Client.describeImages(dir).getImages();
-            System.out.println(ec2Client.describeImages(dir).toString());
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
 
         System.out.println(images.size());
+        System.out.println(images.get(0).getState());
     }
 }
