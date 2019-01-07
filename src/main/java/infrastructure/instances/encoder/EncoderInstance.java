@@ -22,7 +22,7 @@ import java.util.Scanner;
 
 public class EncoderInstance extends RunInstancesRequest {
 
-    public EncoderInstance(String imageID, String encoderInstanceProfileARN, SecurityGroup sg, String bucketName, String queueURL) {
+    public EncoderInstance(String imageID, String encoderInstanceProfileARN, SecurityGroup sg, String bucketName, String queueURL, int encodersToCreate) {
         Tag infrastructureTypeTag = new Tag();
         infrastructureTypeTag.setKey("infrastructure-type");
         infrastructureTypeTag.setValue("encoder " + System.currentTimeMillis());
@@ -38,12 +38,12 @@ public class EncoderInstance extends RunInstancesRequest {
         withInstanceType(InstanceType.T2Micro);
         withTagSpecifications(tagSpecification);
         withIamInstanceProfile(encoderIAM);
-        withMinCount(1);
-        withMaxCount(1);
+        withMinCount(encodersToCreate);
+        withMaxCount(encodersToCreate);
         withSecurityGroupIds(sg.getGroupId());
     }
 
-    public EncoderInstance(String encoderInstanceProfileARN, SecurityGroup sg, String bucketName, String queueURL) {
+    public EncoderInstance(String encoderInstanceProfileARN, SecurityGroup sg, String bucketName, String queueURL, int encodersToCreate) {
         Tag infrastructureTypeTag = new Tag();
         infrastructureTypeTag.setKey("infrastructure-type");
         infrastructureTypeTag.setValue("encoder " + System.currentTimeMillis());
@@ -63,8 +63,8 @@ public class EncoderInstance extends RunInstancesRequest {
         launchConfigContents = launchConfigContents.replaceAll("%BUCKETNAME%", bucketName);
         launchConfigContents = launchConfigContents.replaceAll("%QUEUEURL%", queueURL);
         withUserData(Base64.getEncoder().encodeToString(launchConfigContents.getBytes()));
-        withMinCount(1);
-        withMaxCount(1);
+        withMinCount(encodersToCreate);
+        withMaxCount(encodersToCreate);
         withSecurityGroupIds(sg.getGroupId());
     }
 
@@ -79,7 +79,7 @@ public class EncoderInstance extends RunInstancesRequest {
         return arn;
     }
 
-    public static void start(String imageID, AWSCredentialsProvider cp, String bucketName, String queueURL) {
+    public static void start(String imageID, AWSCredentialsProvider cp, String bucketName, String queueURL, int encodersToCreate) {
         AmazonIdentityManagement aim = AmazonIdentityManagementAsyncClientBuilder.standard()
                 .withRegion(Regions.EU_CENTRAL_1)
                 .withCredentials(cp)
@@ -109,7 +109,7 @@ public class EncoderInstance extends RunInstancesRequest {
 
             SecurityGroup sg = SecurityGroupCreator.create(ec2Client, "encoder-security-group", Arrays.asList(new SecurityGroupCreator.PortRange(22, 22)));
 
-            RunInstancesResult result = ec2Client.runInstances(new EncoderInstance(imageID, arn, sg, bucketName, queueURL));
+            RunInstancesResult result = ec2Client.runInstances(new EncoderInstance(imageID, arn, sg, bucketName, queueURL, encodersToCreate));
 
             System.out.println(result.getReservation().getReservationId());
         } catch (Exception e) {
@@ -117,7 +117,7 @@ public class EncoderInstance extends RunInstancesRequest {
         }
     }
 
-    public static void start(AWSCredentialsProvider cp, String bucketName, String queueURL) {
+    public static void start(AWSCredentialsProvider cp, String bucketName, String queueURL, int encodersToCreate) {
         AmazonIdentityManagement aim = AmazonIdentityManagementAsyncClientBuilder.standard()
                 .withRegion(Regions.EU_CENTRAL_1)
                 .withCredentials(cp)
@@ -147,7 +147,7 @@ public class EncoderInstance extends RunInstancesRequest {
 
             SecurityGroup sg = SecurityGroupCreator.create(ec2Client, "encoder-security-group", Arrays.asList(new SecurityGroupCreator.PortRange(22, 22)));
 
-            RunInstancesResult result = ec2Client.runInstances(new EncoderInstance(arn, sg, bucketName, queueURL));
+            RunInstancesResult result = ec2Client.runInstances(new EncoderInstance(arn, sg, bucketName, queueURL, encodersToCreate));
 
             System.out.println(result.getReservation().getReservationId());
         } catch (Exception e) {

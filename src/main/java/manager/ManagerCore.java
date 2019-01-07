@@ -226,9 +226,7 @@ public class ManagerCore implements Runnable {
 
     private void startBrandNewEncoder(int encodersToCreate) {
         log("Starting new encoder(s) + " + encodersToCreate + " from scratch, will take time to boot properly");
-        for(int i = 0; i < encodersToCreate; i++) {
-            EncoderInstance.start(CredentialsFetch.getCredentialsProvider(), bucketName, queueURL);
-        }
+        EncoderInstance.start(CredentialsFetch.getCredentialsProvider(), bucketName, queueURL, encodersToCreate);
 
         log("Done!, Sleeping extra 60 seconds");
         try {
@@ -240,9 +238,7 @@ public class ManagerCore implements Runnable {
 
     private void startEncoderFromImage(Image encoderImage, int encodersToCreate) {
         log("Starting new encoder(s) + " + encodersToCreate + " from image");
-        for(int i = 0; i < encodersToCreate; i++) {
-            EncoderInstance.start(encoderImage.getImageId(), CredentialsFetch.getCredentialsProvider(), bucketName, queueURL);
-        }
+        EncoderInstance.start(encoderImage.getImageId(), CredentialsFetch.getCredentialsProvider(), bucketName, queueURL, encodersToCreate);
 
         log("Done!");
     }

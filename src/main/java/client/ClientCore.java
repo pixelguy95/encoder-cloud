@@ -34,7 +34,7 @@ public class ClientCore {
 
         channelWrapper = new QueueChannelWrapper(queueURL);
 
-        for(int i = 0; i < 10; i++) {
+        for(int i = 0; i < 16; i++) {
             upload(bucketName, new File(filePath), (i)+".mp4");
             sendMessage((i)+".mp4", channelWrapper.channel);
         }

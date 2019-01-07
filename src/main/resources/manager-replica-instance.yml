@@ -31,6 +31,6 @@ runcmd:
 - cd encoder-cloud-master
 - sudo /opt/gradle/gradle-5.0/bin/gradle managerJar
 - echo '#!/bin/sh' >> /etc/rc.local
-- echo "tmux new-session -d -s encoder_session 'java -jar build/libs/encoder-cloud-manager*.jar %BUCKETNAME% %QUEUEURL%'" | sudo tee -a /etc/rc.local
+- echo "tmux new-session -d -s encoder_session 'java -jar /home/ubuntu/encoder-cloud-master/build/libs/encoder-cloud-manager*.jar %BUCKETNAME% %QUEUEURL%'" | sudo tee -a /etc/rc.local
 - chmod +x /etc/rc.local
-- tmux new-session -d -s encoder_session 'java -jar build/libs/encoder-cloud-manager*.jar %BUCKETNAME% %QUEUEURL%'
+- tmux new-session -d -s encoder_session 'java -jar /home/ubuntu/encoder-cloud-master/build/libs/encoder-cloud-manager*.jar %BUCKETNAME% %QUEUEURL%'
