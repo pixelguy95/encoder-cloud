@@ -44,7 +44,7 @@ public class InfrastructureCore {
         System.out.println("Cluster is formed");
 
         ManagerInstance.start(cp, bucketName, queueURL);
-        EncoderInstance.start(cp, bucketName, queueURL);
+        EncoderInstance.start(cp, bucketName, queueURL, 1);
 
         System.out.println(bucketName);
         System.out.println(queueURL);
