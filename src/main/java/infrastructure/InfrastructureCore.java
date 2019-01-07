@@ -7,14 +7,11 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.CreateKeyPairRequest;
-import com.amazonaws.services.ec2.model.CreateKeyPairResult;
 import com.amazonaws.services.ec2.model.DescribeKeyPairsResult;
 import com.amazonaws.services.ec2.model.KeyPairInfo;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import infrastructure.cluster.RabbitMQClusterInfrastructure;
 import infrastructure.instances.encoder.EncoderInstance;
 import infrastructure.instances.manager.ManagerInstance;
-import manager.ManagerCore;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;

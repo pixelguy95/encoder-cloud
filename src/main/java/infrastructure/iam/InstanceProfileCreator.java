@@ -69,7 +69,7 @@ public class InstanceProfileCreator {
             artipr.setInstanceProfileName(instanceProfileName);
             artipr.setRoleName(roleName);
             aim.addRoleToInstanceProfile(artipr);
-            Thread.sleep(5000);
+            Thread.sleep(6000);
 
         } catch (Exception e) {
             e.printStackTrace();
