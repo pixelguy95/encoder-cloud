@@ -206,7 +206,9 @@ public class ManagerCore implements Runnable {
             for (Instance instance : instances) {
                 List<Tag> tags = instance.getTags();
                 for (Tag tag : tags) {
-                    if (tag.getKey().equals("infrastructure-type") && tag.getValue().startsWith("encoder ")) {
+                    if (tag.getKey().equals("infrastructure-type")
+                            && tag.getValue().startsWith("encoder ")
+                            && instance.getState().equals(new InstanceState().withName(InstanceStateName.Running))) {
                         createImageFrom = instance;
                         break;
                     }
