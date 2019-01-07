@@ -46,10 +46,16 @@ public class InstanceProfileCreator {
                 rrfipr.setRoleName(roleName);
                 aim.removeRoleFromInstanceProfile(rrfipr);
 
+
+            } catch (NoSuchEntityException e) {
+
+            }
+
+            try {
                 DeleteInstanceProfileRequest dipr = new DeleteInstanceProfileRequest();
                 dipr.setInstanceProfileName(instanceProfileName);
                 aim.deleteInstanceProfile(dipr);
-            } catch (NoSuchEntityException e) {
+            }  catch (NoSuchEntityException e) {
 
             }
 
