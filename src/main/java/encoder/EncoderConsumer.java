@@ -1,6 +1,7 @@
 package encoder;
 
 import aws.CredentialsFetch;
+import client.Message;
 import client.prototypes.QueueChannelWrapper;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
@@ -10,6 +11,7 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 import com.amazonaws.services.s3.transfer.Upload;
+import com.google.gson.Gson;
 import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Delivery;
 
@@ -33,9 +35,12 @@ public class EncoderConsumer implements DeliverCallback {
     @Override
     public void handle(String consumerTag, Delivery message) throws IOException {
         try {
+            Gson gson = new Gson();
             String m = new String(message.getBody(), "UTF-8");
             System.out.println(" [x] Received '" + m + "'");
-            convertAndUpload(m);
+
+            Message mess = gson.fromJson(m,Message.class);
+            convertAndUpload(mess.getKey());
         } finally {
 
             queueChannelWrapper.channel.basicAck(message.getEnvelope().getDeliveryTag(), false);
