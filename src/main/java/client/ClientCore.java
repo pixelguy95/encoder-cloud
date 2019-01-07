@@ -33,19 +33,22 @@ public class ClientCore {
                 withRegion(Regions.EU_CENTRAL_1).build();
 
         channelWrapper = new QueueChannelWrapper(queueURL);
-        upload(bucketName, new File(filePath));
-        sendMessage(new File(filePath), channelWrapper.channel);
+
+        for(int i = 0; i < 10; i++) {
+            upload(bucketName, new File(filePath), (i)+".mp4");
+            sendMessage((i)+".mp4", channelWrapper.channel);
+        }
         channelWrapper.shutdown();
 
     }
 
-    private void upload(String bucketName, File file) {
+    private void upload(String bucketName, File file, String s3name) {
 
         TransferManager tm = TransferManagerBuilder.standard()
                 .withS3Client(s3)
                 .build();
 
-        PutObjectRequest request = new PutObjectRequest(bucketName, file.getName(), new File(file.getPath()));
+        PutObjectRequest request = new PutObjectRequest(bucketName, s3name, new File(file.getPath()));
 
         request.setGeneralProgressListener(progressEvent ->
                 System.out.println("Transferred bytes: " + progressEvent.getBytesTransferred() + "/" + file.length()));
@@ -60,12 +63,15 @@ public class ClientCore {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        System.out.println("Success! Uploaded: " + file.getName() + " to bucket " + bucketName);
+        System.out.println("Success! Uploaded: " + s3name + " to bucket " + bucketName);
     }
 
 
-    private void sendMessage(File file, Channel channel) throws IOException {
-        channel.basicPublish("", QueueChannelWrapper.ENCODING_REQUEST_QUEUE, null, file.getName().getBytes());
+
+    private void sendMessage(String s3Name, Channel channel) throws IOException {
+        channel.basicPublish("", QueueChannelWrapper.ENCODING_REQUEST_QUEUE, null, s3Name.getBytes());
+        System.out.println("was ist das: " + s3Name.getBytes());
+
     }
 
 

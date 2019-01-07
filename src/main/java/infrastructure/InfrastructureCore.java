@@ -28,6 +28,9 @@ public class InfrastructureCore {
 
         ManagerInstance.start(cp, bucketName, queueURL);
         EncoderInstance.start(cp, bucketName, queueURL);
+
+        System.out.println(bucketName);
+        System.out.println(queueURL);
     }
 
     private static void waitForClusterToForm(String queueURL) throws IOException, TimeoutException {

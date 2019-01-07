@@ -14,6 +14,7 @@ import infrastructure.instances.encoder.EncoderInstance;
 import infrastructure.instances.manager.ManagerInstance;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -128,18 +129,52 @@ public class ManagerCore implements Runnable {
 
     private void startNewEncoder(double nrOfEncoders) {
 
-        List<Image> images = ec2Client.describeImages().getImages();
+        log("Going through all existing images");
+        List<Image> images = null;
+        try {
+            DescribeImagesRequest dir = new DescribeImagesRequest();
+            dir.setOwners(Arrays.asList("self"));
+            images = ec2Client.describeImages(dir).getImages();
+        } catch (Exception e) {
+            log(e.getMessage());
+        }
+
         boolean containsEncoderImage = false;
         Image encoderImage = null;
+        log("Images found: " + images.size());
         for(Image i : images) {
             if(i.getName().equals("encoder-instance-image-v1")) {
                 containsEncoderImage = true;
                 encoderImage = i;
             }
         }
+        log("Found existing encoder image? " + containsEncoderImage);
 
         if(!containsEncoderImage && nrOfEncoders > 0) {
             encoderImage = createEncoderImage();
+
+            log("Waiting for image to become available");
+            try {
+                while(true) {
+                    DescribeImagesRequest dir = new DescribeImagesRequest();
+                    dir.setOwners(Arrays.asList("self"));
+                    List<Image> all = ec2Client.describeImages(dir).getImages();
+
+                    for(Image image : all) {
+                        if(image.getName().equals("encoder-instance-image-v1") && image.getState().equals("available")) {
+                            break;
+                        }
+
+                        log(image.getState() + " " + image.getState().equals("available"));
+                    }
+                    Thread.sleep(5000);
+                }
+
+            } catch (Exception e) {
+                log(e.getMessage());
+            }
+            log("Image is available now");
+
             startEncoderFromImage(encoderImage);
         } else if(containsEncoderImage) {
             startEncoderFromImage(encoderImage);
