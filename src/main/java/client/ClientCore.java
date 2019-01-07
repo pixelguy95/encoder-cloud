@@ -35,6 +35,8 @@ public class ClientCore {
         channelWrapper = new QueueChannelWrapper(queueURL);
         upload(bucketName, new File(filePath));
         sendMessage(new File(filePath), channelWrapper.channel);
+        channelWrapper.shutdown();
+
     }
 
     private void upload(String bucketName, File file) {
@@ -64,7 +66,6 @@ public class ClientCore {
 
     private void sendMessage(File file, Channel channel) throws IOException {
         channel.basicPublish("", QueueChannelWrapper.ENCODING_REQUEST_QUEUE, null, file.getName().getBytes());
-        System.out.println("was ist das: " + file.getName().getBytes());
     }
 
 
@@ -78,21 +79,4 @@ public class ClientCore {
 
         new ClientCore(args[0], args[1], args[2]);
     }
-
-
-    //    private static void createBucket(String bucketName) {
-//        if(!s3.doesBucketExistV2(bucketName)) {
-//            System.out.println("Create bucket");
-//            s3.createBucket(bucketName);
-//        }
-//    }
-
-
-//    private static String buildMQMessage(String key) {
-//        Message message = new Message();
-//        message.setKey(key);
-//
-//        Gson gson = new Gson();
-//        return gson.toJson(message);
-//    }
 }

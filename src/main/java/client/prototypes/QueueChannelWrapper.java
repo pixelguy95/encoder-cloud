@@ -23,7 +23,6 @@ public class QueueChannelWrapper {
         connectionFactory.setPassword("kebabpizza");
         connection = connectionFactory.newConnection();
         channel = connection.createChannel();
-
         declareQueues(channel);
     }
 

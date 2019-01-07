@@ -35,12 +35,12 @@ public class EncoderConsumer implements DeliverCallback {
     @Override
     public void handle(String consumerTag, Delivery message) throws IOException {
         try {
-            Gson gson = new Gson();
+           // Gson gson = new Gson();
             String m = new String(message.getBody(), "UTF-8");
             System.out.println(" [x] Received '" + m + "'");
 
-            Message mess = gson.fromJson(m,Message.class);
-            convertAndUpload(mess.getKey());
+           // Message mess = gson.fromJson(m,Message.class);
+            convertAndUpload(m);
         } finally {
 
             queueChannelWrapper.channel.basicAck(message.getEnvelope().getDeliveryTag(), false);
