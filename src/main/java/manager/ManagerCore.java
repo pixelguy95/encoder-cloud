@@ -132,6 +132,14 @@ public class ManagerCore implements Runnable {
 
                 if(queueSize == 0 && nrOfEncoders > 1) {
                     killEncoders((nrOfEncoders - queueSize) - 1);
+
+                    log("Sleeping for 30 seconds now");
+
+                    try {
+                        Thread.sleep(30000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
 
             } catch (IOException e) {
