@@ -164,6 +164,8 @@ public class ManagerCore implements Runnable {
                         if(image.getName().equals("encoder-instance-image-v1") && image.getState().equals("available")) {
                             break;
                         }
+
+                        log(image.getState() + " " + image.getState().equals("available"));
                     }
                     Thread.sleep(5000);
                 }
