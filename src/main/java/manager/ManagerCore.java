@@ -165,7 +165,6 @@ public class ManagerCore implements Runnable {
                             break;
                         }
                     }
-
                     Thread.sleep(5000);
                 }
 
