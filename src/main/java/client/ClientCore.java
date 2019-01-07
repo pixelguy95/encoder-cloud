@@ -33,7 +33,7 @@ public class ClientCore {
                 withRegion(Regions.EU_CENTRAL_1).build();
 
         channelWrapper = new QueueChannelWrapper(queueURL);
-        for(int i = 0; i < 100; i++) {
+        for(int i = 0; i < 10; i++) {
             upload(bucketName, new File(filePath), (i)+".mp4");
             sendMessage((i)+".mp4", channelWrapper.channel);
         }

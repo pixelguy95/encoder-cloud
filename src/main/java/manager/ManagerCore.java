@@ -14,6 +14,7 @@ import infrastructure.instances.encoder.EncoderInstance;
 import infrastructure.instances.manager.ManagerInstance;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -131,13 +132,16 @@ public class ManagerCore implements Runnable {
         log("Going through all existing images");
         List<Image> images = null;
         try {
-            images = ec2Client.describeImages().getImages();
+            DescribeImagesRequest dir = new DescribeImagesRequest();
+            dir.setOwners(Arrays.asList("self"));
+            images = ec2Client.describeImages(dir).getImages();
         } catch (Exception e) {
             log(e.getMessage());
         }
 
         boolean containsEncoderImage = false;
         Image encoderImage = null;
+        log("Images found: " + images.size());
         for(Image i : images) {
             if(i.getName().equals("encoder-instance-image-v1")) {
                 containsEncoderImage = true;
