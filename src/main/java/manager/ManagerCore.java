@@ -108,7 +108,7 @@ public class ManagerCore implements Runnable {
 
                 if (queueSize > nrOfEncoders + 1) {
                     log("New encoder instance needed");
-                    startNewEncoder(nrOfEncoders);
+                    startNewEncoder(nrOfEncoders, (int) (queueSize - nrOfEncoders));
 
                     log("Sleeping for 30 seconds now");
 
@@ -119,6 +119,10 @@ public class ManagerCore implements Runnable {
                     }
                 }
 
+                if(queueSize == 0 && nrOfEncoders > 1) {
+                    killEncoders(nrOfEncoders - 1);
+                }
+
             } catch (IOException e) {
                 log(e.getMessage());
             }
@@ -126,7 +130,45 @@ public class ManagerCore implements Runnable {
         }
     }
 
-    private void startNewEncoder(double nrOfEncoders) {
+    private void killEncoders(double encodersToKill) {
+        List<Reservation> reservations = ec2Client.describeInstances().getReservations();
+
+        int killed = 0;
+        log("Going through, all instances, killing encoders until satisfied");
+        for (Reservation r : reservations) {
+            List<Instance> instances = r.getInstances();
+            for (Instance instance : instances) {
+                List<Tag> tags = instance.getTags();
+                for (Tag tag : tags) {
+                    if (tag.getKey().equals("infrastructure-type")
+                            && tag.getValue().startsWith("encoder ")
+                            && instance.getState().getCode() == 16) {
+
+                        if(killed >= encodersToKill)
+                            break;
+
+                        TerminateInstancesRequest tir = new TerminateInstancesRequest();
+                        tir.setInstanceIds(Arrays.asList(instance.getInstanceId()));
+                        ec2Client.terminateInstances(tir);
+                        killed++;
+
+                        break;
+                    }
+                }
+
+                if(killed >= encodersToKill)
+                    break;
+            }
+
+            if(killed >= encodersToKill)
+                break;
+
+        }
+
+        log("Killed " + killed + " encoders");
+    }
+
+    private void startNewEncoder(double currentNrOfEncoders, int encodersToCreate) {
 
         log("Going through all existing images");
         List<Image> images = null;
@@ -149,7 +191,7 @@ public class ManagerCore implements Runnable {
         }
         log("Found existing encoder image? " + containsEncoderImage);
 
-        if (!containsEncoderImage && nrOfEncoders > 0) {
+        if (!containsEncoderImage && currentNrOfEncoders > 0) {
             encoderImage = createEncoderImage();
 
             log("Waiting for image to become available");
@@ -174,23 +216,34 @@ public class ManagerCore implements Runnable {
             }
             log("Image is available now");
 
-            startEncoderFromImage(encoderImage);
+            startEncoderFromImage(encoderImage, encodersToCreate);
         } else if (containsEncoderImage) {
-            startEncoderFromImage(encoderImage);
-        } else if (!containsEncoderImage && nrOfEncoders == 0) {
-            startBrandNewEncoder();
+            startEncoderFromImage(encoderImage, encodersToCreate);
+        } else if (!containsEncoderImage && currentNrOfEncoders == 0) {
+            startBrandNewEncoder(encodersToCreate);
         }
     }
 
-    private void startBrandNewEncoder() {
-        log("Starting new encoder from scratch, will take time to boot properly");
-        EncoderInstance.start(CredentialsFetch.getCredentialsProvider(), bucketName, queueURL);
-        log("Done!");
+    private void startBrandNewEncoder(int encodersToCreate) {
+        log("Starting new encoder(s) + " + encodersToCreate + " from scratch, will take time to boot properly");
+        for(int i = 0; i < encodersToCreate; i++) {
+            EncoderInstance.start(CredentialsFetch.getCredentialsProvider(), bucketName, queueURL);
+        }
+
+        log("Done!, Sleeping extra 60 seconds");
+        try {
+            Thread.sleep(60000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
-    private void startEncoderFromImage(Image encoderImage) {
-        log("Starting new encoder from image");
-        EncoderInstance.start(encoderImage.getImageId(), CredentialsFetch.getCredentialsProvider(), bucketName, queueURL);
+    private void startEncoderFromImage(Image encoderImage, int encodersToCreate) {
+        log("Starting new encoder(s) + " + encodersToCreate + " from image");
+        for(int i = 0; i < encodersToCreate; i++) {
+            EncoderInstance.start(encoderImage.getImageId(), CredentialsFetch.getCredentialsProvider(), bucketName, queueURL);
+        }
+
         log("Done!");
     }
 
