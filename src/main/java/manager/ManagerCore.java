@@ -208,7 +208,7 @@ public class ManagerCore implements Runnable {
                 for (Tag tag : tags) {
                     if (tag.getKey().equals("infrastructure-type")
                             && tag.getValue().startsWith("encoder ")
-                            && instance.getState().equals(new InstanceState().withName(InstanceStateName.Running))) {
+                            && instance.getState().getCode() == 16) {
                         createImageFrom = instance;
                         break;
                     }
@@ -222,7 +222,7 @@ public class ManagerCore implements Runnable {
                 break;
         }
 
-        log("Found viable instance");
+        log("Found viable instance " + createImageFrom.getInstanceId());
         log("Sending image creation request");
 
         CreateImageRequest cir = new CreateImageRequest();
