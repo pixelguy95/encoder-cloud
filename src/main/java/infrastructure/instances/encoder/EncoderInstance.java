@@ -35,7 +35,7 @@ public class EncoderInstance extends RunInstancesRequest {
 
         withImageId(imageID);
         withKeyName("school");
-        withInstanceType(InstanceType.T2Micro);
+        withInstanceType(InstanceType.T2Medium);
         withTagSpecifications(tagSpecification);
         withIamInstanceProfile(encoderIAM);
         withMinCount(encodersToCreate);
