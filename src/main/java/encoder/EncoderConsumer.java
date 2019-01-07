@@ -36,8 +36,9 @@ public class EncoderConsumer implements DeliverCallback {
     public void handle(String consumerTag, Delivery message) throws IOException {
         try {
             convertAndUpload(new String(message.getBody()));
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         } finally {
-
             queueChannelWrapper.channel.basicAck(message.getEnvelope().getDeliveryTag(), false);
         }
     }
