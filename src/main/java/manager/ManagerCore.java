@@ -10,10 +10,13 @@ import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.util.EC2MetadataUtils;
 import com.rabbitmq.client.AMQP;
+import com.rabbitmq.http.client.Client;
+import com.rabbitmq.http.client.domain.QueueInfo;
 import infrastructure.instances.encoder.EncoderInstance;
 import infrastructure.instances.manager.ManagerInstance;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -22,16 +25,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ManagerCore implements Runnable {
 
     public static QueueChannelWrapper qcw;
+    public static Client rabbitMQClusterClient;
     private boolean replica;
     private AmazonEC2 ec2Client;
 
     private String bucketName;
     private String queueURL;
 
-    public ManagerCore(String bucketName, String queueURL) throws InterruptedException, IOException, TimeoutException {
+    public ManagerCore(String bucketName, String queueURL) throws InterruptedException, IOException, TimeoutException, URISyntaxException {
+
 
         this.bucketName = bucketName;
         this.queueURL = queueURL;
+
+        rabbitMQClusterClient = new Client(queueURL+ ":15672/api/", "admin", "kebabpizza");
 
         qcw = new QueueChannelWrapper(queueURL);
         log("MANAGER STARTING");
@@ -100,9 +107,11 @@ public class ManagerCore implements Runnable {
 
             AMQP.Queue.DeclareOk ok = null;
             try {
-                ok = qcw.channel.queueDeclare(QueueChannelWrapper.ENCODING_REQUEST_QUEUE, true, false, false, null);
-                double queueSize = ok.getMessageCount();
-                double nrOfEncoders = ok.getConsumerCount();
+                ok = qcw.channel.queueDeclare(QueueChannelWrapper.ENCODING_REQUEST_QUEUE, true, false, false, null); //Just in case
+
+                QueueInfo queueInfo = rabbitMQClusterClient.getQueue("/", QueueChannelWrapper.ENCODING_REQUEST_QUEUE);
+                double queueSize = queueInfo.getMessagesUnacknowledged() + queueInfo.getMessagesReady();
+                double nrOfEncoders = queueInfo.getConsumerCount();
 
                 log("Encoding queue size: " + queueSize + ", Nr of encoders: " + nrOfEncoders);
 
@@ -305,7 +314,7 @@ public class ManagerCore implements Runnable {
         return ec2Client.describeImages(new DescribeImagesRequest().withImageIds(imageID)).getImages().get(0);
     }
 
-    public static void main(String args[]) throws IOException, TimeoutException, InterruptedException {
+    public static void main(String args[]) throws IOException, TimeoutException, InterruptedException, URISyntaxException {
 
 
         new ManagerCore(args[0], args[1]);
