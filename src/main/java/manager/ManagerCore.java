@@ -226,9 +226,15 @@ public class ManagerCore implements Runnable {
         CreateImageRequest cir = new CreateImageRequest();
         cir.setInstanceId(createImageFrom.getInstanceId());
         cir.setName("encoder-instance-image-v1");
-        String imageID = ec2Client.createImage(cir).getImageId();
 
-        log("Image created!");
+        String imageID = "(nothing yet)";
+        try {
+            imageID = ec2Client.createImage(cir).getImageId();
+        } catch (Exception e) {
+            log(e.getMessage());
+        }
+
+        log("Image created! " + imageID);
 
         return ec2Client.describeImages(new DescribeImagesRequest().withImageIds(imageID)).getImages().get(0);
     }

@@ -11,6 +11,7 @@ import com.amazonaws.util.EC2MetadataUtils;
 import infrastructure.S3BucketSetup;
 import infrastructure.cluster.RabbitMQClusterInfrastructure;
 import infrastructure.instances.encoder.EncoderInstance;
+import infrastructure.instances.manager.ManagerInstance;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,16 +24,6 @@ public class TempCore {
 
         AmazonEC2 ec2Client = AmazonEC2ClientBuilder.standard().withCredentials(cp).withRegion(Regions.EU_CENTRAL_1).build();
 
-        List<Image> images = null;
-        try {
-            DescribeImagesRequest dir = new DescribeImagesRequest();
-            dir.setOwners(Arrays.asList("self"));
-            images = ec2Client.describeImages(dir).getImages();
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-
-        System.out.println(images.size());
-        System.out.println(images.get(0).getState());
+        ManagerInstance.start(cp, "encoder-bucket-acs2xqlbmggy91e-c24ykkskrnhz1g5ltsmoa7pkhk", "rabbitmq-cluster-loadbalancer-528595232.eu-central-1.elb.amazonaws.com");
     }
 }
