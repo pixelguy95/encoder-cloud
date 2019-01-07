@@ -109,8 +109,10 @@ public class ManagerCore implements Runnable {
             try {
                 ok = qcw.channel.queueDeclare(QueueChannelWrapper.ENCODING_REQUEST_QUEUE, true, false, false, null); //Just in case
 
+                double queueSize = ok.getMessageCount();
+
                 QueueInfo queueInfo = rabbitMQClusterClient.getQueue("/", QueueChannelWrapper.ENCODING_REQUEST_QUEUE);
-                double queueSize = queueInfo.getMessagesUnacknowledged() + queueInfo.getMessagesReady();
+                double doubleUnAcked = queueInfo.getMessagesUnacknowledged();
                 double nrOfEncoders = queueInfo.getConsumerCount();
 
                 log("Encoding queue size: " + queueSize + ", Nr of encoders: " + nrOfEncoders);
@@ -128,7 +130,7 @@ public class ManagerCore implements Runnable {
                     }
                 }
 
-                if(queueSize < nrOfEncoders && nrOfEncoders > 1) {
+                if(queueSize == 0 && nrOfEncoders > 1) {
                     killEncoders((nrOfEncoders - queueSize) - 1);
                 }
 
