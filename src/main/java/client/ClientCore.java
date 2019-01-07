@@ -38,7 +38,7 @@ public class ClientCore {
             upload(bucketName, new File(filePath), (i)+".mp4");
             sendMessage((i)+".mp4", channelWrapper.channel);
         }
-        channelWrapper.shutdown();
+       // channelWrapper.shutdown();
 
     }
 
