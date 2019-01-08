@@ -75,8 +75,14 @@ public class ManagerCore implements Runnable {
         startReplica();
         log("replica started");
 
-        log("Starting data reporting");
+        log("Starting data reporting in 4 minutes");
         new Thread(() -> {
+
+            try {
+                Thread.sleep(4*60000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
             AmazonCloudWatch cloudWatchCLient = AmazonCloudWatchClientBuilder
                     .standard()
@@ -112,6 +118,11 @@ public class ManagerCore implements Runnable {
                     gmdr.setEndTime(Calendar.getInstance().getTime());
                     gmdr.setNamespace("AWS/EC2");
                     GetMetricStatisticsResult res = cloudWatchCLient.getMetricStatistics(gmdr);
+
+                    if(res.getDatapoints().size() == 0) {
+                        System.out.println("No data yet");
+                        continue;
+                    }
 
                     Datapoint latest = res.getDatapoints().stream().sorted(Comparator.comparing(Datapoint::getTimestamp)).collect(Collectors.toList()).get(res.getDatapoints().size()-1);
                     sum += latest.getMaximum();
