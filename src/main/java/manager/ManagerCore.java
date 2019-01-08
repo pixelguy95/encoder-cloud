@@ -76,55 +76,52 @@ public class ManagerCore implements Runnable {
         log("replica started");
 
         log("Starting data reporting");
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
+        new Thread(() -> {
 
-                AmazonCloudWatch cloudWatchCLient = AmazonCloudWatchClientBuilder
-                        .standard()
-                        .withCredentials(cp)
-                        .withRegion(Regions.EU_CENTRAL_1)
-                        .build();
+            AmazonCloudWatch cloudWatchCLient = AmazonCloudWatchClientBuilder
+                    .standard()
+                    .withCredentials(cp)
+                    .withRegion(Regions.EU_CENTRAL_1)
+                    .build();
 
-                String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
-                int encoders = countRunningInstancesWithTag("encoder");
+            String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
+            int encoders = countRunningInstancesWithTag("encoder");
 
-                while(true) {
+            while(true) {
 
-                    String dataLine = time + ",";
-                    dataLine = dataLine + "," + encoders;
+                String dataLine = time + ",";
+                dataLine = dataLine + "," + encoders;
 
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-                    List<Instance> allEncoders = getInstancesWithTag("encoder");
-                    double sum = 0.0;
-                    for(Instance encoder : allEncoders) {
-                        GetMetricStatisticsRequest gmdr = new GetMetricStatisticsRequest();
-                        gmdr.setMetricName("CPUUtilization");
-                        gmdr.setStatistics(Arrays.asList("Maximum"));
-                        gmdr.setDimensions(Arrays.asList(new Dimension().withName("InstanceId").withValue(encoder.getInstanceId())));
-                        Calendar c = Calendar.getInstance();
-                        c.add(Calendar.SECOND, -4*60);
-                        gmdr.setStartTime(c.getTime());
-                        gmdr.setPeriod(60);
-                        gmdr.setEndTime(Calendar.getInstance().getTime());
-                        gmdr.setNamespace("AWS/EC2");
-                        GetMetricStatisticsResult res = cloudWatchCLient.getMetricStatistics(gmdr);
-
-                        Datapoint latest = res.getDatapoints().stream().sorted(Comparator.comparing(Datapoint::getTimestamp)).collect(Collectors.toList()).get(res.getDatapoints().size()-1);
-                        sum += latest.getMaximum();
-                    }
-
-                    dataLine = dataLine + "," + sum;
-                    data(dataLine);
-
-                    time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
-                    encoders = countRunningInstancesWithTag("encoder");
+                try {
+                    Thread.sleep(60000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
+
+                List<Instance> allEncoders = getInstancesWithTag("encoder");
+                double sum = 0.0;
+                for(Instance encoder : allEncoders) {
+                    GetMetricStatisticsRequest gmdr = new GetMetricStatisticsRequest();
+                    gmdr.setMetricName("CPUUtilization");
+                    gmdr.setStatistics(Arrays.asList("Maximum"));
+                    gmdr.setDimensions(Arrays.asList(new Dimension().withName("InstanceId").withValue(encoder.getInstanceId())));
+                    Calendar c = Calendar.getInstance();
+                    c.add(Calendar.SECOND, -4*60);
+                    gmdr.setStartTime(c.getTime());
+                    gmdr.setPeriod(60);
+                    gmdr.setEndTime(Calendar.getInstance().getTime());
+                    gmdr.setNamespace("AWS/EC2");
+                    GetMetricStatisticsResult res = cloudWatchCLient.getMetricStatistics(gmdr);
+
+                    Datapoint latest = res.getDatapoints().stream().sorted(Comparator.comparing(Datapoint::getTimestamp)).collect(Collectors.toList()).get(res.getDatapoints().size()-1);
+                    sum += latest.getMaximum();
+                }
+
+                dataLine = dataLine + "," + sum;
+                data(dataLine);
+
+                time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
+                encoders = countRunningInstancesWithTag("encoder");
             }
         });
 
