@@ -41,6 +41,7 @@ public class EncoderInstance extends RunInstancesRequest {
         withMinCount(1);
         withMaxCount(encodersToCreate);
         withSecurityGroupIds(sg.getGroupId());
+        withMonitoring(true);
     }
 
     public EncoderInstance(String encoderInstanceProfileARN, SecurityGroup sg, String bucketName, String queueURL, int encodersToCreate) {
