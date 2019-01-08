@@ -83,11 +83,11 @@ task encoderJar(type: Jar) {
 
 task clientJar(type: Jar) {
     manifest {
-        attributes 'Implementation-Title': 'encoder-cloud-client',
+        attributes 'Implementation-Title': 'encoder-cloud-workloadGenerator',
                 'Implementation-Version': version,
-                'Main-Class': 'client.ClientCore'
+                'Main-Class': 'client.WorkloadGenerator'
     }
-    baseName = project.name + '-client'
+    baseName = project.name + '-workloadGenerator'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 
