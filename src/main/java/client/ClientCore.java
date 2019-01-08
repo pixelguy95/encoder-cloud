@@ -91,6 +91,10 @@ public class ClientCore implements Runnable{
             int counter = 0;
             @Override
             public void run() {
+
+                MesureUnit mesureUnit = new MesureUnit(Thread.currentThread().getName() + counter + ".avi", s3, bucketName, channelWrapper.channel);
+                mesureUnit.run();
+
                 upload(bucketName, new File(filePath), Thread.currentThread().getName()+ counter +".mp4");
 
                 try {
