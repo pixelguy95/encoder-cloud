@@ -13,7 +13,7 @@ public class WorkloadGenerator {
 
         for(int i=0; i<clients;i++) {
             ClientCore core = new ClientCore(bucketName,queueURL,filePath,time);
-            core.run();
+            new Thread(core).start();
         }
 
     }

@@ -61,14 +61,13 @@ public class ClientCore implements Runnable{
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        System.out.println("Success! Uploaded: " + s3name + " to bucket " + bucketName);
+       // System.out.println("Success! Uploaded: " + s3name + " to bucket " + bucketName);
     }
 
 
 
     private void sendMessage(String s3Name, Channel channel) throws IOException {
         channel.basicPublish("", QueueChannelWrapper.ENCODING_REQUEST_QUEUE, null, s3Name.getBytes());
-        System.out.println("was ist das: " + s3Name.getBytes());
 
     }
 
@@ -91,9 +90,14 @@ public class ClientCore implements Runnable{
             int counter = 0;
             @Override
             public void run() {
+                try {
+                    checkMQQueue();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
 
-                MesureUnit mesureUnit = new MesureUnit(Thread.currentThread().getName() + counter + ".avi", s3, bucketName, channelWrapper.channel);
-                mesureUnit.run();
+                MesureUnit mesureUnit = new MesureUnit(Thread.currentThread().getName() + counter + ".avi", s3, bucketName);
+                new Thread(mesureUnit).start();
 
                 upload(bucketName, new File(filePath), Thread.currentThread().getName()+ counter +".mp4");
 
@@ -105,5 +109,11 @@ public class ClientCore implements Runnable{
                 counter++;
             }
         },0, Integer.toUnsignedLong(time));
+    }
+
+    private void checkMQQueue() throws IOException {
+        AMQP.Queue.DeclareOk response = channelWrapper.channel.queueDeclarePassive(QueueChannelWrapper.ENCODING_REQUEST_QUEUE);
+
+      //  System.out.println("The number of videos submited are " + response.getMessageCount());
     }
 }
