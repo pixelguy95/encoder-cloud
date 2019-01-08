@@ -6,7 +6,8 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.impl.AMQImpl;
 
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 public class MesureUnit implements Runnable {
@@ -59,6 +60,7 @@ public class MesureUnit implements Runnable {
     private void startTimer() {
         startTime = System.currentTimeMillis();
     }
+
 }
 
 
