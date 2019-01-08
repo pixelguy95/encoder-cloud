@@ -67,6 +67,7 @@ public class EncoderInstance extends RunInstancesRequest {
         withMinCount(1);
         withMaxCount(encodersToCreate);
         withSecurityGroupIds(sg.getGroupId());
+        withMonitoring(true);
     }
 
     public static String createEncoderRole(AmazonIdentityManagement aim) {
