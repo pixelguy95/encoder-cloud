@@ -81,13 +81,27 @@ task encoderJar(type: Jar) {
     exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
 }
 
+
 task clientJar(type: Jar) {
     manifest {
-        attributes 'Implementation-Title': 'encoder-cloud-client',
+        attributes 'Implementation-Title': 'encoder-cloud-workloadGenerator',
                 'Implementation-Version': version,
-                'Main-Class': 'client.ClientCore'
+                'Main-Class': 'client.WorkloadGenerator'
     }
-    baseName = project.name + '-client'
+    baseName = project.name + '-workloadGenerator'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
+}
+
+task infrastructureJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title' : 'infrastructureCore',
+                'Implementation-Version' : version,
+                'Main-Class': 'infrastructure.InfrastructureCore'
+    }
+    baseName = project.name + '-infrastructure'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 
