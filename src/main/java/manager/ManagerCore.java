@@ -5,6 +5,13 @@ import client.prototypes.QueueChannelWrapper;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.apigateway.AmazonApiGateway;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatchClientBuilder;
+import com.amazonaws.services.cloudwatch.model.Datapoint;
+import com.amazonaws.services.cloudwatch.model.Dimension;
+import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsRequest;
+import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsResult;
+import com.amazonaws.services.connect.model.GetMetricDataRequest;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.*;
@@ -17,11 +24,11 @@ import infrastructure.instances.manager.ManagerInstance;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class ManagerCore implements Runnable {
 
@@ -39,7 +46,7 @@ public class ManagerCore implements Runnable {
         this.bucketName = bucketName;
         this.queueURL = queueURL;
 
-        rabbitMQClusterClient = new Client("http://" + queueURL+ ":15672/api/", "admin", "kebabpizza");
+        rabbitMQClusterClient = new Client("http://" + queueURL + ":15672/api/", "admin", "kebabpizza");
 
         qcw = new QueueChannelWrapper(queueURL);
         log("MANAGER STARTING");
@@ -51,14 +58,15 @@ public class ManagerCore implements Runnable {
                 .withCredentials(cp)
                 .build();
 
-        if (countManagerInstances() > 1) {
+        if (countRunningInstancesWithTag("manager") > 1) {
             replica = true;
         }
 
         while (replica) {
             Thread.sleep(5000);
-            if (countManagerInstances() == 1) {
-                log("manager must have died: " + countManagerInstances());
+            int managers = countRunningInstancesWithTag("manager");
+            if (managers == 1) {
+                log("manager must have died: " + managers);
                 replica = false;
             }
         }
@@ -66,6 +74,59 @@ public class ManagerCore implements Runnable {
         log("starting replica");
         startReplica();
         log("replica started");
+
+        log("Starting data reporting");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                AmazonCloudWatch cloudWatchCLient = AmazonCloudWatchClientBuilder
+                        .standard()
+                        .withCredentials(cp)
+                        .withRegion(Regions.EU_CENTRAL_1)
+                        .build();
+
+                String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
+                int encoders = countRunningInstancesWithTag("encoder");
+
+                while(true) {
+
+                    String dataLine = time + ",";
+                    dataLine = dataLine + "," + encoders;
+
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    List<Instance> allEncoders = getInstancesWithTag("encoder");
+                    double sum = 0.0;
+                    for(Instance encoder : allEncoders) {
+                        GetMetricStatisticsRequest gmdr = new GetMetricStatisticsRequest();
+                        gmdr.setMetricName("CPUUtilization");
+                        gmdr.setStatistics(Arrays.asList("Maximum"));
+                        gmdr.setDimensions(Arrays.asList(new Dimension().withName("InstanceId").withValue(encoder.getInstanceId())));
+                        Calendar c = Calendar.getInstance();
+                        c.add(Calendar.SECOND, -4*60);
+                        gmdr.setStartTime(c.getTime());
+                        gmdr.setPeriod(60);
+                        gmdr.setEndTime(Calendar.getInstance().getTime());
+                        gmdr.setNamespace("AWS/EC2");
+                        GetMetricStatisticsResult res = cloudWatchCLient.getMetricStatistics(gmdr);
+
+                        Datapoint latest = res.getDatapoints().stream().sorted(Comparator.comparing(Datapoint::getTimestamp)).collect(Collectors.toList()).get(res.getDatapoints().size()-1);
+                        sum += latest.getMaximum();
+                    }
+
+                    dataLine = dataLine + "," + sum;
+                    data(dataLine);
+
+                    time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
+                    encoders = countRunningInstancesWithTag("encoder");
+                }
+            }
+        });
 
         new Thread(this).start();
     }
@@ -80,13 +141,13 @@ public class ManagerCore implements Runnable {
 
     }
 
-    public int countManagerInstances() {
+    public int countRunningInstancesWithTag(String startsWith) {
         AtomicInteger count = new AtomicInteger();
         try {
             ec2Client.describeInstances().getReservations()
                     .forEach(reservation -> reservation.getInstances().stream().filter(i -> i.getState().getCode() == 16)
                             .forEach(instance -> instance.getTags().forEach(tag -> {
-                                if (tag.getValue().startsWith("manager")) {
+                                if (tag.getValue().startsWith(startsWith)) {
                                     count.getAndIncrement();
                                 }
                             })));
@@ -95,6 +156,24 @@ public class ManagerCore implements Runnable {
         }
 
         return count.get();
+    }
+
+    public List<Instance> getInstancesWithTag(String startsWith) {
+
+        List<Instance> all = new ArrayList<>();
+        try {
+            ec2Client.describeInstances().getReservations()
+                    .forEach(reservation -> reservation.getInstances().stream().filter(i -> i.getState().getCode() == 16)
+                            .forEach(instance -> instance.getTags().forEach(tag -> {
+                                if (tag.getValue().startsWith(startsWith)) {
+                                    all.add(instance);
+                                }
+                            })));
+        } catch (Exception e) {
+            log(e.getMessage());
+        }
+
+        return all;
     }
 
     @Override
@@ -113,9 +192,6 @@ public class ManagerCore implements Runnable {
                 double queueSize = ok.getMessageCount();
                 double nrOfEncoders = ok.getConsumerCount();
 
-
-
-
                 log("Encoding queue size: " + queueSize + ", Nr of encoders: " + nrOfEncoders);
 
                 if (queueSize > nrOfEncoders * 1.2) {
@@ -131,7 +207,7 @@ public class ManagerCore implements Runnable {
                     }
                 }
 
-                if(queueSize < nrOfEncoders && nrOfEncoders > 1) {
+                if (queueSize < nrOfEncoders && nrOfEncoders > 1) {
 
                     try {
                         Thread.sleep(1000);
@@ -144,12 +220,10 @@ public class ManagerCore implements Runnable {
 
                     log(queueSize + " " + unAcked + " " + nrOfEncoders);
 
-                    if(queueSize + unAcked < nrOfEncoders) {
-                        log("Killing " + Math.max(nrOfEncoders - queueSize  - unAcked, 0) + " instances");
-                        killEncoders(Math.max(nrOfEncoders - queueSize  - unAcked, 0));
+                    if (queueSize + unAcked < nrOfEncoders) {
+                        log("Killing " + Math.max(nrOfEncoders - queueSize - unAcked, 0) + " instances");
+                        killEncoders(Math.max(nrOfEncoders - queueSize - unAcked, 0));
                     }
-
-
                 }
 
             } catch (IOException | InterruptedException e) {
@@ -174,7 +248,7 @@ public class ManagerCore implements Runnable {
                             && tag.getValue().startsWith("encoder ")
                             && instance.getState().getCode() == 16) {
 
-                        if(killed >= encodersToKill)
+                        if (killed >= encodersToKill)
                             break;
 
                         TerminateInstancesRequest tir = new TerminateInstancesRequest();
@@ -193,11 +267,11 @@ public class ManagerCore implements Runnable {
                     }
                 }
 
-                if(killed >= encodersToKill)
+                if (killed >= encodersToKill)
                     break;
             }
 
-            if(killed >= encodersToKill)
+            if (killed >= encodersToKill)
                 break;
 
         }
@@ -249,7 +323,7 @@ public class ManagerCore implements Runnable {
                         log(image.getState() + " " + image.getState().equals("available"));
                     }
 
-                    if(done)
+                    if (done)
                         break;
 
                     Thread.sleep(5000);
@@ -273,13 +347,12 @@ public class ManagerCore implements Runnable {
         log("Starting new encoder(s) + " + encodersToCreate + " from scratch, will take time to boot properly");
         EncoderInstance.start(CredentialsFetch.getCredentialsProvider(), bucketName, queueURL, encodersToCreate);
 
-        while(true) {
+        while (true) {
             double nrOfEncoders = qcw.channel.queueDeclare(QueueChannelWrapper.ENCODING_REQUEST_QUEUE, true, false, false, null).getConsumerCount();
 
-            if(nrOfEncoders > 0) {
+            if (nrOfEncoders > 0) {
                 break;
-            }
-            else {
+            } else {
                 log("Waiting for new instance to start...");
                 Thread.sleep(6000);
             }
@@ -359,18 +432,29 @@ public class ManagerCore implements Runnable {
      * @param message message will be written to the basic log queue
      */
     public static void log(String message) {
+
+        String identity = "[unknown]";
         try {
+            identity = "[" + EC2MetadataUtils.getInstanceId() + "]";
+        } catch (Exception e) {
 
-            String identity = "[unknown]";
-            try {
-                identity = "[" + EC2MetadataUtils.getInstanceId() + "]";
-            } catch (Exception e) {
-
-            }
-
-            message = identity + " " + message;
-            qcw.channel.basicPublish("", QueueChannelWrapper.BASIC_LOG_QUEUE, null, message.getBytes());
-        } catch (IOException e) {
         }
+
+        message = identity + " " + message;
+        publish(message);
+
+    }
+
+    public static void publish(String m) {
+        try {
+            qcw.channel.basicPublish("", QueueChannelWrapper.BASIC_LOG_QUEUE, null, m.getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void data(String message) {
+        String prefix = "[data] ";
+        publish(prefix + message);
     }
 }
