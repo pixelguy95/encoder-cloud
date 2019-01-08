@@ -78,11 +78,11 @@ public class ManagerCore implements Runnable {
         log("Starting data reporting in 4 minutes");
         new Thread(() -> {
 
-            try {
-                Thread.sleep(4*60000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                Thread.sleep(4*60000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
 
             AmazonCloudWatch cloudWatchCLient = AmazonCloudWatchClientBuilder
                     .standard()
@@ -95,7 +95,7 @@ public class ManagerCore implements Runnable {
 
             while(true) {
 
-                String dataLine = time + ",";
+                String dataLine = time;
                 dataLine = dataLine + "," + encoders;
 
                 try {
@@ -134,7 +134,7 @@ public class ManagerCore implements Runnable {
                 time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
                 encoders = countRunningInstancesWithTag("encoder");
             }
-        });
+        }).start();
 
         new Thread(this).start();
     }

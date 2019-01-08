@@ -42,7 +42,7 @@ public class TempCore {
 
         while(true) {
 
-            String dataLine = time + ",";
+            String dataLine = time;
             dataLine = dataLine + "," + encoders;
 
             try {
@@ -79,7 +79,7 @@ public class TempCore {
             }
 
             dataLine = dataLine + "," + sum;
-            //data(dataLine);
+            System.out.println(dataLine);
 
             time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
             encoders = 0;
